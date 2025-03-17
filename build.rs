@@ -1,31 +1,57 @@
-use std::env;
 use std::path::PathBuf;
+use std::{env, panic};
 
 fn main() {
-    // Tell cargo to look for shared libraries in the specified directory
     println!("cargo:rerun-if-changed=hardware/gpio.h");
 
-    // Tell cargo to tell rustc to link the system bzip2
-    // shared library.
+    let libdir_path = PathBuf::from("hardware")
+        .canonicalize()
+        .expect("cannot canonicalize path");
 
-    // The bindgen::Builder is the main entry point
-    // to bindgen, and lets you build up options for
-    // the resulting bindings.
+    let headers_path = libdir_path.join("gpio.h");
+    let headers_path_str = headers_path.to_str().expect("Path is not a valid string");
+
+    let obj_path = libdir_path.join("gpio.o");
+    let lib_path = libdir_path.join("libgpio.a");
+
+    println!("cargo:rustc-link-search={}", libdir_path.to_str().unwrap());
+
+    println!("cargo:rustc-link-lib=gpio");
+
+    if !std::process::Command::new("clang")
+        .arg("-c")
+        .arg("-o")
+        .arg(&obj_path)
+        .arg(libdir_path.join("gpio.c"))
+        .output()
+        .expect("could not spawn 'clang'")
+        .status
+        .success()
+    {
+        panic!("could not compile object file");
+    }
+
+    if !std::process::Command::new("ar")
+        .arg("rcs")
+        .arg(lib_path)
+        .arg(obj_path)
+        .output()
+        .expect("could not spawn 'ar'")
+        .status
+        .success()
+    {
+        panic!("could not emit library path");
+    }
+
     let bindings = bindgen::Builder::default()
-        // The input header we would like to generate
-        // bindings for.
-        .header("hardware/gpio.h")
-        // Tell cargo to invalidate the built crate whenever any of the
-        // included header files changed.
+        .header(headers_path_str)
         .parse_callbacks(Box::new(bindgen::CargoCallbacks::new()))
-        // Finish the builder and generate the bindings.
         .generate()
-        // Unwrap the Result and panic on failure.
-        .expect("Unable to generate bindings");
+        .expect("unable to generate bindings");
 
-    // Write the bindings to the $OUT_DIR/bindings.rs file.
-    let out_path = PathBuf::from(env::var("OUT_DIR").unwrap());
+    let out_path = PathBuf::from(env::var("OUT_DIR").unwrap()).join("bindings.rs");
+
     bindings
-        .write_to_file(out_path.join("bindings.rs"))
-        .expect("Couldn't write bindings!");
+        .write_to_file(out_path)
+        .expect("couldnt write bindings");
 }
