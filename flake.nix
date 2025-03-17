@@ -47,11 +47,15 @@
             rust-analyzer
             clang-tools
             cmake
+            clang
           ];
 
           env = {
             # Required by rust-analyzer
             RUST_SRC_PATH = "${pkgs.rustToolchain}/lib/rustlib/src/rust/library";
+
+            # bindgen shit
+            LIBCLANG_PATH = "${pkgs.libclang.lib}/lib";
           };
         };
       });
