@@ -1,10 +1,4 @@
-use axum::{
-    http::StatusCode,
-    routing::{get, post},
-    Json, Router,
-};
-
-use serde::{Deserialize, Serialize};
+use axum::{routing::get, Router};
 
 #[tokio::main]
 async fn main() {
