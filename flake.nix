@@ -1,63 +1,33 @@
 {
-  description = "A Nix-flake-based Rust development environment";
+  description = "A basic Rust flake";
 
   inputs = {
-    nixpkgs.url = "https://flakehub.com/f/NixOS/nixpkgs/0.1.*.tar.gz";
-    rust-overlay = {
-      url = "github:oxalica/rust-overlay";
-      inputs.nixpkgs.follows = "nixpkgs";
-    };
+    nixpkgs.url = "nixpkgs/nixos-unstable";
   };
 
-  outputs = { self, nixpkgs, rust-overlay }:
-    let
-      supportedSystems = [ "x86_64-linux" ];
-      forEachSupportedSystem = f: nixpkgs.lib.genAttrs supportedSystems (system: f {
-        pkgs = import nixpkgs {
-          inherit system;
-          overlays = [ rust-overlay.overlays.default self.overlays.default ];
-        };
-      });
-    in
-    {
-      overlays.default = final: prev: {
-        rustToolchain =
-          let
-            rust = prev.rust-bin;
-          in
-          if builtins.pathExists ./rust-toolchain.toml then
-            rust.fromRustupToolchainFile ./rust-toolchain.toml
-          else if builtins.pathExists ./rust-toolchain then
-            rust.fromRustupToolchainFile ./rust-toolchain
-          else
-            rust.stable.latest.default.override {
-              extensions = [ "rust-src" "rustfmt" ];
-            };
-      };
+  outputs = { self, nixpkgs }: let
+    system = "x86_64-linux";
+    pkgs = import nixpkgs { inherit system; };
+  in {
+    devShell.${system} = pkgs.mkShell {
+      buildInputs = with pkgs; [
+        rustup
+        cmake
+        clang
+      ];
 
-      devShells = forEachSupportedSystem ({ pkgs }: {
-        default = pkgs.mkShell {
-          packages = with pkgs; [
-            rustToolchain
-            openssl
-            pkg-config
-            cargo-deny
-            cargo-edit
-            cargo-watch
-            rust-analyzer
-            clang-tools
-            cmake
-            clang
-          ];
+      shellHook = ''
+        # Avoid polluting the home directory
+        export RUSTUP_HOME=$(pwd)/.rustup/
+        export CARGO_HOME=$(pwd)/.cargo/
 
-          env = {
-            # Required by rust-analyzer
-            RUST_SRC_PATH = "${pkgs.rustToolchain}/lib/rustlib/src/rust/library";
+        # Use binaries installed with `cargo install`
+        export PATH=$PATH:$CARGO_HOME/bin
+        export LIBCLANG_PATH=${pkgs.libclang.lib}/lib
 
-            # bindgen shit
-            LIBCLANG_PATH = "${pkgs.libclang.lib}/lib";
-          };
-        };
-      });
+        # Install and display the current toolchain
+        rustup show
+      '';
     };
+  };
 }
