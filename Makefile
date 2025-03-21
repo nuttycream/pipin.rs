@@ -1,8 +1,8 @@
-clean: 
-	cargo clean
-
 build:
 	cargo build
+
+clean: 
+	cargo clean
 
 run:
 	cargo run
