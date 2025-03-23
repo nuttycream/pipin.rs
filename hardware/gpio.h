@@ -34,27 +34,27 @@ extern volatile unsigned *gpio;
 #define GPIO_PULLCLK0 *(gpio + 38)            // Pull up/pull down clock
 
 // Set GPIO direction
-int set_gpio_inp(int gpio_pin);
-int set_gpio_out(int gpio_pin);
+extern int set_gpio_inp(int gpio_pin);
+extern int set_gpio_out(int gpio_pin);
 
 // Clear gpio
-int clear_gpio(int gpio_pin);
+extern int clear_gpio(int gpio_pin);
 
 // get gpio
 // 0 - LOW
 // 1 - HIGH
-int get_gpio(int gpio_pin);
+extern int get_gpio(int gpio_pin);
 
 // Toggles the GPIO pin: 0 - off, 1 - on
-int toggle_gpio(int level, int gpio_pin);
+extern int toggle_gpio(int level, int gpio_pin);
 
 // Set up pull-down resistor for a gpio pin
-int set_gpio_pulldown(int gpio_pin, int wait_time);
+extern int set_gpio_pulldown(int gpio_pin, int wait_time);
 // Set up pull-up resistor for gpion pin
-int set_gpio_pullup(int gpio_pin, int wait_time);
+extern int set_gpio_pullup(int gpio_pin, int wait_time);
 
 // Set up a memory regions to access GPIO
-int setup_io();
+extern int setup_io();
 
 // Clean up
-int terminate_io();
+extern int terminate_io();
