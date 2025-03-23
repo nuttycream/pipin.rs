@@ -1,19 +1,26 @@
-use axum::{routing::get, Router};
+//use axum::{routing::get, Router};
+mod bindings;
+use bindings::Gpio;
 
-#[tokio::main]
-async fn main() {
-    tracing_subscriber::fmt::init();
+use std::{thread, time::Duration};
 
-    let app = Router::new().route("/", get(root));
+fn main() -> Result<(), &'static str> {
+    println!("starting");
 
-    let listener = tokio::net::TcpListener::bind("127.0.0.1:3000")
-        .await
-        .unwrap();
+    let gpio = Gpio::new(17)?;
 
-    tracing::debug!("listening on {}", listener.local_addr().unwrap());
-    axum::serve(listener, app).await.unwrap();
-}
+    gpio.set_as_output()?;
 
-async fn root() -> &'static str {
-    "Hello World!"
+    for _i in 0..5 {
+        println!("on");
+        gpio.set_high()?;
+        thread::sleep(Duration::from_millis(500));
+
+        println!("off");
+        gpio.set_low()?;
+        thread::sleep(Duration::from_millis(500));
+    }
+
+    println!("done");
+    Ok(())
 }
