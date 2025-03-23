@@ -1,3 +1,5 @@
 /target
 .rustup
 .cargo
+*.o
+*.a
