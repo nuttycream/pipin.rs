@@ -1,4 +1,5 @@
-use std::os::raw::c_int;
+use core::fmt;
+use std::{error::Error, os::raw::c_int};
 
 extern "C" {
     fn setup_io() -> c_int;
@@ -13,11 +14,32 @@ pub struct Gpio {
     initialized: bool,
 }
 
+#[derive(Debug)]
+pub enum GpioError {
+    Init,
+    Direction(i32),
+    Set(i32),
+    Terminate,
+}
+
+impl fmt::Display for GpioError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            GpioError::Init => write!(f, "Failed to Initialize"),
+            GpioError::Direction(pin) => write!(f, "Failed to set direction {}", pin),
+            GpioError::Set(pin) => write!(f, "Failed to set high - low {}", pin),
+            GpioError::Terminate => write!(f, "Failed to terminate"),
+        }
+    }
+}
+
+impl Error for GpioError {}
+
 impl Gpio {
-    pub fn new(pin: i32) -> Result<Self, &'static str> {
+    pub fn new(pin: i32) -> Result<Self, GpioError> {
         unsafe {
             if setup_io() != 0 {
-                return Err("Failed to initialize GPIO");
+                return Err(GpioError::Init);
             }
         }
 
@@ -27,28 +49,28 @@ impl Gpio {
         })
     }
 
-    pub fn set_as_output(&self) -> Result<(), &'static str> {
+    pub fn set_as_output(&self) -> Result<(), GpioError> {
         unsafe {
             if set_gpio_out(self.pin) == 0 {
-                return Err("Failed to set GPIO as output");
+                return Err(GpioError::Direction(self.pin));
             }
         }
         Ok(())
     }
 
-    pub fn set_high(&self) -> Result<(), &'static str> {
+    pub fn set_high(&self) -> Result<(), GpioError> {
         unsafe {
             if toggle_gpio(1, self.pin) != 0 {
-                return Err("Failed to set GPIO high");
+                return Err(GpioError::Set(self.pin));
             }
         }
         Ok(())
     }
 
-    pub fn set_low(&self) -> Result<(), &'static str> {
+    pub fn set_low(&self) -> Result<(), GpioError> {
         unsafe {
             if toggle_gpio(0, self.pin) != 0 {
-                return Err("Failed to set GPIO low");
+                return Err(GpioError::Set(self.pin));
             }
         }
         Ok(())
