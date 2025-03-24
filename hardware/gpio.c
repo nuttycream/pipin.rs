@@ -11,11 +11,23 @@ volatile unsigned *gpio;
 
 // Sets GPIO pin to Input
 int set_gpio_inp(int gpio_pin) {
+
+    if (gpio_pin < 0 || gpio_pin > 27) {
+        printf("error: invalid gpio pin; between 0-27");
+        return 1;
+    }
+
     return *(gpio + ((gpio_pin) / 10)) &= ~(7 << ((gpio_pin) % 10) * 3);
 }
 
 // Sets GPIO pin to Output
 int set_gpio_out(int gpio_pin) {
+
+    if (gpio_pin < 0 || gpio_pin > 27) {
+        printf("error: invalid gpio pin; between 0-27");
+        return 1;
+    }
+
     if (set_gpio_inp(gpio_pin) != 0) {
         printf("error: failed to set_gpio_inp before set_gpio_out\n");
         return 1;
@@ -36,6 +48,11 @@ int toggle_gpio(int level, int gpio_pin) {
         return 1;
     }
 
+    if (gpio_pin < 0 || gpio_pin > 27) {
+        printf("error: invalid gpio pin; between 0-27");
+        return 1;
+    }
+
     if (level == 1) {
         *(gpio + 7) = 1 << gpio_pin;
     } else if (level == 0) {
@@ -47,6 +64,12 @@ int toggle_gpio(int level, int gpio_pin) {
 
 // Get GPIO status
 int get_gpio(int gpio_pin) {
+
+    if (gpio_pin < 0 || gpio_pin > 27) {
+        printf("error: invalid gpio pin; between 0-27");
+        return 1;
+    }
+
     return ((*(gpio + 13) & (1 << gpio_pin)) ? 1 : 0);
 }
 
@@ -86,6 +109,11 @@ int setup_io() {
 // wait_time in useconds
 int set_gpio_pulldown(int gpio_pin, int wait_time) {
 
+    if (gpio_pin < 0 || gpio_pin > 27) {
+        printf("error: invalid gpio pin; between 0-27");
+        return 1;
+    }
+
     // clear first
     GPIO_PULL = 0;
     usleep(wait_time);
@@ -107,6 +135,12 @@ int set_gpio_pulldown(int gpio_pin, int wait_time) {
 // Set up pull-up resistor for gpion pin
 // wait_time in useconds
 int set_gpio_pullup(int gpio_pin, int wait_time) {
+
+    if (gpio_pin < 0 || gpio_pin > 27) {
+        printf("error: invalid gpio pin; between 0-27");
+        return 1;
+    }
+
     GPIO_PULL = 0;
     usleep(wait_time);
 
