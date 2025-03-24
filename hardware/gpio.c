@@ -10,7 +10,7 @@ void *gpio_map;
 volatile unsigned *gpio;
 
 // Sets GPIO pin to Input
-int set_gpio_inp(int gpio_pin) {
+extern int set_gpio_inp(int gpio_pin) {
 
     if (gpio_pin < 0 || gpio_pin > 27) {
         printf("error: invalid gpio pin; between 0-27");
@@ -21,7 +21,7 @@ int set_gpio_inp(int gpio_pin) {
 }
 
 // Sets GPIO pin to Output
-int set_gpio_out(int gpio_pin) {
+extern int set_gpio_out(int gpio_pin) {
 
     if (gpio_pin < 0 || gpio_pin > 27) {
         printf("error: invalid gpio pin; between 0-27");
@@ -36,13 +36,13 @@ int set_gpio_out(int gpio_pin) {
 }
 
 // Clear gpio
-int clear_gpio(int gpio_pin) {
+extern int clear_gpio(int gpio_pin) {
     *(gpio + 10) = 1 << gpio_pin;
     return 0;
 }
 
 // Toggles the GPIO pin; 0 - off, 1 - on
-int toggle_gpio(int level, int gpio_pin) {
+extern int toggle_gpio(int level, int gpio_pin) {
     if (level < 0 || level > 1) {
         printf("error: invalid level; use 0(off), or 1(on)");
         return 1;
@@ -63,7 +63,7 @@ int toggle_gpio(int level, int gpio_pin) {
 }
 
 // Get GPIO status
-int get_gpio(int gpio_pin) {
+extern int get_gpio(int gpio_pin) {
 
     if (gpio_pin < 0 || gpio_pin > 27) {
         printf("error: invalid gpio pin; between 0-27");
@@ -74,7 +74,7 @@ int get_gpio(int gpio_pin) {
 }
 
 // Set up a memory regions to access GPIO
-int setup_io() {
+extern int setup_io() {
     printf("gpio: setting up\n");
     /* open /dev/mem */
     if ((mem_fd = open("/dev/mem", O_RDWR | O_SYNC)) < 0) {
@@ -107,7 +107,7 @@ int setup_io() {
 
 // Set up pull-down resistor for a gpio pin
 // wait_time in useconds
-int set_gpio_pulldown(int gpio_pin, int wait_time) {
+extern int set_gpio_pulldown(int gpio_pin, int wait_time) {
 
     if (gpio_pin < 0 || gpio_pin > 27) {
         printf("error: invalid gpio pin; between 0-27");
@@ -134,7 +134,7 @@ int set_gpio_pulldown(int gpio_pin, int wait_time) {
 
 // Set up pull-up resistor for gpion pin
 // wait_time in useconds
-int set_gpio_pullup(int gpio_pin, int wait_time) {
+extern int set_gpio_pullup(int gpio_pin, int wait_time) {
 
     if (gpio_pin < 0 || gpio_pin > 27) {
         printf("error: invalid gpio pin; between 0-27");
@@ -159,7 +159,7 @@ int set_gpio_pullup(int gpio_pin, int wait_time) {
 }
 
 // Handle Clean up
-int terminate_io() {
+extern int terminate_io() {
     printf("gpio: cleaning up\n");
     // Unmap the GPIO memory
     if (gpio_map != NULL) {
