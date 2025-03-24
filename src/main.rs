@@ -1,5 +1,4 @@
 mod bindings;
-mod server;
 
 use bindings::Gpio;
 
