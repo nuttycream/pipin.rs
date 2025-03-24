@@ -1,5 +1,5 @@
-use core::fmt;
-use std::{error::Error, os::raw::c_int};
+use crate::errors::GpioError;
+use std::os::raw::c_int;
 
 extern "C" {
     fn setup_io() -> c_int;
@@ -10,67 +10,49 @@ extern "C" {
 }
 
 pub struct Gpio {
-    pin: i32,
     initialized: bool,
 }
 
-#[derive(Debug)]
-pub enum GpioError {
-    Init,
-    Direction(i32),
-    Set(i32),
-    Terminate,
+trait GpioController: Sized {
+    fn new() -> Result<Self, GpioError>;
+    fn set_as_output(&self, pin: i32) -> Result<(), GpioError>;
+    fn set_high(&self, pin: i32) -> Result<(), GpioError>;
+    fn set_low(&self, pin: i32) -> Result<(), GpioError>;
 }
 
-impl fmt::Display for GpioError {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            GpioError::Init => write!(f, "Failed to Initialize"),
-            GpioError::Direction(pin) => write!(f, "Failed to set direction {}", pin),
-            GpioError::Set(pin) => write!(f, "Failed to set high - low {}", pin),
-            GpioError::Terminate => write!(f, "Failed to terminate"),
-        }
-    }
-}
-
-impl Error for GpioError {}
-
-impl Gpio {
-    pub fn new(pin: i32) -> Result<Self, GpioError> {
+impl GpioController for Gpio {
+    fn new() -> Result<Self, GpioError> {
         unsafe {
             if setup_io() != 0 {
                 return Err(GpioError::Init);
             }
         }
 
-        Ok(Gpio {
-            pin,
-            initialized: true,
-        })
+        Ok(Gpio { initialized: true })
     }
 
-    pub fn set_as_output(&self) -> Result<(), GpioError> {
+    fn set_as_output(&self, pin: i32) -> Result<(), GpioError> {
         unsafe {
-            if set_gpio_out(self.pin) == 0 {
-                return Err(GpioError::Direction(self.pin));
+            if set_gpio_out(pin) == 0 {
+                return Err(GpioError::Direction(pin));
             }
         }
         Ok(())
     }
 
-    pub fn set_high(&self) -> Result<(), GpioError> {
+    fn set_high(&self, pin: i32) -> Result<(), GpioError> {
         unsafe {
-            if toggle_gpio(1, self.pin) != 0 {
-                return Err(GpioError::Set(self.pin));
+            if toggle_gpio(1, pin) != 0 {
+                return Err(GpioError::Set(pin));
             }
         }
         Ok(())
     }
 
-    pub fn set_low(&self) -> Result<(), GpioError> {
+    fn set_low(&self, pin: i32) -> Result<(), GpioError> {
         unsafe {
-            if toggle_gpio(0, self.pin) != 0 {
-                return Err(GpioError::Set(self.pin));
+            if toggle_gpio(0, pin) != 0 {
+                return Err(GpioError::Set(pin));
             }
         }
         Ok(())
