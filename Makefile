@@ -13,8 +13,11 @@ release:
 clean: 
 	cargo clean
 
-run:
-	cargo run
-
-remote: 
+remote: release
 	rsync -az $(ROOTNAME) $(REMOTE_HOST):$(REMOTE_DIR)/
+
+local:
+	cargo build --target x86_64-unknown-linux-gnu
+
+run:
+	cargo run --target x86_64-unknown-linux-gnu
