@@ -10,13 +10,14 @@ void *gpio_map;
 volatile unsigned *gpio;
 
 // switch between bcm2710 & bcm2708 addresses
+// defaults to bcm2710
 // 0 - bcm2710 = 0x3f000000
 // 1 - bcm2708 = 0x20000000
 extern int switch_hardware_address(int option) {
 
     if (option < 0 || option > 1) {
         printf("error: option must be 0-1\n");
-        return 1;
+        return -1;
     }
 
     return 0;
@@ -27,7 +28,7 @@ extern int set_gpio_inp(int gpio_pin) {
 
     if (gpio_pin < 0 || gpio_pin > 27) {
         printf("error: invalid gpio pin; between 0-27");
-        return 1;
+        return -1;
     }
 
     return *(gpio + ((gpio_pin) / 10)) &= ~(7 << ((gpio_pin) % 10) * 3);
@@ -38,12 +39,12 @@ extern int set_gpio_out(int gpio_pin) {
 
     if (gpio_pin < 0 || gpio_pin > 27) {
         printf("error: invalid gpio pin; between 0-27");
-        return 1;
+        return -1;
     }
 
     if (set_gpio_inp(gpio_pin) != 0) {
         printf("error: failed to set_gpio_inp before set_gpio_out\n");
-        return 1;
+        return -1;
     }
     return *(gpio + ((gpio_pin) / 10)) |= (1 << (((gpio_pin) % 10) * 3));
 }
@@ -53,7 +54,7 @@ extern int clear_gpio(int gpio_pin) {
 
     if (gpio_pin < 0 || gpio_pin > 27) {
         printf("error: invalid gpio pin; between 0-27");
-        return 1;
+        return -1;
     }
 
     *(gpio + 10) = 1 << gpio_pin;
@@ -64,12 +65,12 @@ extern int clear_gpio(int gpio_pin) {
 extern int toggle_gpio(int level, int gpio_pin) {
     if (level < 0 || level > 1) {
         printf("error: invalid level; use 0(off), or 1(on)");
-        return 1;
+        return -1;
     }
 
     if (gpio_pin < 0 || gpio_pin > 27) {
         printf("error: invalid gpio pin; between 0-27");
-        return 1;
+        return -1;
     }
 
     if (level == 1) {
@@ -86,7 +87,7 @@ extern int get_gpio(int gpio_pin) {
 
     if (gpio_pin < 0 || gpio_pin > 27) {
         printf("error: invalid gpio pin; between 0-27");
-        return 1;
+        return -1;
     }
 
     return ((*(gpio + 13) & (1 << gpio_pin)) ? 1 : 0);
@@ -98,7 +99,7 @@ extern int setup_io() {
     /* open /dev/mem */
     if ((mem_fd = open("/dev/mem", O_RDWR | O_SYNC)) < 0) {
         printf("error: can't open /dev/mem \n");
-        return 1;
+        return -1;
     }
 
     /* mmap GPIO */
@@ -130,7 +131,7 @@ extern int set_gpio_pulldown(int gpio_pin, int wait_time) {
 
     if (gpio_pin < 0 || gpio_pin > 27) {
         printf("error: invalid gpio pin; between 0-27");
-        return 1;
+        return -1;
     }
 
     // clear first
@@ -157,7 +158,7 @@ extern int set_gpio_pullup(int gpio_pin, int wait_time) {
 
     if (gpio_pin < 0 || gpio_pin > 27) {
         printf("error: invalid gpio pin; between 0-27");
-        return 1;
+        return -1;
     }
 
     GPIO_PULL = 0;
@@ -185,7 +186,7 @@ extern int terminate_io() {
         if (munmap(gpio_map, BLOCK_SIZE) == 0) {
             gpio_map = NULL;
         } else {
-            return 1;
+            return -1;
         }
     }
     return 0;
