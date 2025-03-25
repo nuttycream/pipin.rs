@@ -1,6 +1,6 @@
-<p align="center">
-    web-pi-gpio (pronounced *web py gip py oh*)
-</p>
+<h2 align="center">
+    web-pi-gpio
+</h2>
 
 is a gpio 'controller' specifically for raspberry pi  
 it uses a gpio direct registry access library in C  
