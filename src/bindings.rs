@@ -23,7 +23,7 @@ trait GpioController: Sized {
 impl GpioController for Gpio {
     fn new() -> Result<Self, GpioError> {
         unsafe {
-            if setup_io() != 0 {
+            if setup_io() < 0 {
                 return Err(GpioError::Init);
             }
         }
@@ -33,7 +33,7 @@ impl GpioController for Gpio {
 
     fn set_as_output(&self, pin: i32) -> Result<(), GpioError> {
         unsafe {
-            if set_gpio_out(pin) == 0 {
+            if set_gpio_out(pin) < 0 {
                 return Err(GpioError::Direction(pin));
             }
         }
@@ -42,7 +42,7 @@ impl GpioController for Gpio {
 
     fn set_high(&self, pin: i32) -> Result<(), GpioError> {
         unsafe {
-            if toggle_gpio(1, pin) != 0 {
+            if toggle_gpio(1, pin) < 0 {
                 return Err(GpioError::Set(pin));
             }
         }
@@ -51,7 +51,7 @@ impl GpioController for Gpio {
 
     fn set_low(&self, pin: i32) -> Result<(), GpioError> {
         unsafe {
-            if toggle_gpio(0, pin) != 0 {
+            if toggle_gpio(0, pin) < 0 {
                 return Err(GpioError::Set(pin));
             }
         }
