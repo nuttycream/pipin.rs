@@ -9,6 +9,19 @@ void *gpio_map;
 // I/O access
 volatile unsigned *gpio;
 
+// switch between bcm2710 & bcm2708 addresses
+// 0 - bcm2710 = 0x3f000000
+// 1 - bcm2708 = 0x20000000
+extern int switch_hardware_address(int option) {
+
+    if (option < 0 || option > 1) {
+        printf("error: option must be 0-1\n");
+        return 1;
+    }
+
+    return 0;
+}
+
 // Sets GPIO pin to Input
 extern int set_gpio_inp(int gpio_pin) {
 
@@ -37,6 +50,12 @@ extern int set_gpio_out(int gpio_pin) {
 
 // Clear gpio
 extern int clear_gpio(int gpio_pin) {
+
+    if (gpio_pin < 0 || gpio_pin > 27) {
+        printf("error: invalid gpio pin; between 0-27");
+        return 1;
+    }
+
     *(gpio + 10) = 1 << gpio_pin;
     return 0;
 }

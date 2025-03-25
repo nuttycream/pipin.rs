@@ -53,6 +53,11 @@ extern int set_gpio_pulldown(int gpio_pin, int wait_time);
 // Set up pull-up resistor for gpion pin
 extern int set_gpio_pullup(int gpio_pin, int wait_time);
 
+// switch between bcm2710 & bcm2708 addresses
+// 0 - bcm2710 = 0x3f000000
+// 1 - bcm2708 = 0x20000000
+extern int switch_hardware_address(int option);
+
 // Set up a memory regions to access GPIO
 extern int setup_io();
 
