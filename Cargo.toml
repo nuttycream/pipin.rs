@@ -1,5 +1,5 @@
 [package]
-name = "pipinctrl_rs"
+name = "pipinctrlrs"
 version = "0.1.0"
 edition = "2021"
 
