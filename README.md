@@ -2,6 +2,7 @@
     pipinctrl.rs
 </h2>
 control gpio pins using your browser
+
 <!--toc:start-->
 - [features](#features)
 - [installation](#installation)
