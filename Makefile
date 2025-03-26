@@ -21,3 +21,6 @@ local:
 
 run:
 	cargo run --target x86_64-unknown-linux-gnu
+
+watch:
+	systemfd --no-pid -s http::3000 -- cargo watch -w src/ -w frontend/ -x run
