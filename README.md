@@ -1,14 +1,13 @@
 <h2 align="center">
     pipinctrl.rs
 </h2>
-
+control gpio pins using your browser
 <!--toc:start-->
 - [features](#features)
 - [installation](#installation)
 - [usage](#usage)
 - [attribution](#attribution)
 <!--toc:end-->
-control gpio pins using your browser
 
 ## features
 - toggle individual pins (0-27)
