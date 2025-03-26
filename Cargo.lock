@@ -165,15 +165,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "07e28edb80900c19c28f1072f2e8aeca7fa06b23cd4169cefe1af5aa3260783f"
 
 [[package]]
-name = "gpio_controller"
-version = "0.1.0"
-dependencies = [
- "axum",
- "serde",
- "tokio",
-]
-
-[[package]]
 name = "http"
 version = "1.3.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -375,6 +366,15 @@ name = "pin-utils"
 version = "0.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "8b870d8c151b6f2fb93e84a13146138f05d02ed11c7e7c54f8826aaaf7c9f184"
+
+[[package]]
+name = "pipinctrl_rs"
+version = "0.1.0"
+dependencies = [
+ "axum",
+ "serde",
+ "tokio",
+]
 
 [[package]]
 name = "proc-macro2"
