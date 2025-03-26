@@ -1,5 +1,5 @@
 [toolchain]
-channel = "stable"
+channel = "nightly"
 components = [ "rust-analyzer", "rustfmt", "rust-src"]
 profile = "minimal"
 targets = [ "aarch64-unknown-linux-musl" ]
