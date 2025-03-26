@@ -1,4 +1,7 @@
-use std::{error::Error, fmt};
+use std::{
+    error::Error,
+    fmt,
+};
 
 #[derive(Debug)]
 pub enum GpioError {

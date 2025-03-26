@@ -1,5 +1,8 @@
-use std::path::PathBuf;
-use std::{env, process::Command};
+use std::{
+    env,
+    path::PathBuf,
+    process::Command,
+};
 
 // no longer depends on bindgen
 // will write bindings on my own

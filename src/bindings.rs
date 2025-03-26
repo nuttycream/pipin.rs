@@ -1,7 +1,7 @@
 use crate::errors::GpioError;
 use std::os::raw::c_int;
 
-extern "C" {
+unsafe extern "C" {
     fn setup_io() -> c_int;
     fn terminate_io() -> c_int;
 
@@ -13,7 +13,7 @@ pub struct Gpio {
     initialized: bool,
 }
 
-trait GpioController: Sized {
+pub trait GpioController: Sized {
     fn new() -> Result<Self, GpioError>;
     fn set_as_output(&self, pin: i32) -> Result<(), GpioError>;
     fn set_high(&self, pin: i32) -> Result<(), GpioError>;
