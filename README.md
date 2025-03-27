@@ -1,4 +1,4 @@
-# pipinctrl.rs
+# pipin.rs
 control gpio pins using your browser 
 
 `Note: currently supports Raspberry Pi GPIO Addresses`
