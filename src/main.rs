@@ -7,10 +7,7 @@ use axum::{
         Html,
         IntoResponse,
     },
-    routing::{
-        any,
-        get,
-    },
+    routing::get,
     Router,
 };
 use bindings::{
@@ -27,6 +24,10 @@ use std::{
     env,
     error::Error,
     net::SocketAddr,
+    time::{
+        SystemTime,
+        UNIX_EPOCH,
+    },
 };
 use tokio::net::TcpListener;
 
@@ -42,7 +43,8 @@ async fn main() -> Result<(), Box<dyn Error>> {
         .route("/", get(serve_html))
         .route("/htmx.min.js", get(serve_js))
         .route("/style.css", get(serve_css))
-        .route("/ws", any(ws_handler));
+        .route("/ws", get(ws_handler))
+        .route("/setup", get(setup));
 
     let mut listenfd = ListenFd::from_env();
     let listener = match listenfd.take_tcp_listener(0)? {
@@ -53,8 +55,6 @@ async fn main() -> Result<(), Box<dyn Error>> {
         None => TcpListener::bind(addr).await?,
     };
 
-    Gpio::new()?;
-
     println!("listening on {}", listener.local_addr().unwrap());
     axum::serve(
         listener,
@@ -64,6 +64,35 @@ async fn main() -> Result<(), Box<dyn Error>> {
     .unwrap();
 
     Ok(())
+}
+
+async fn setup() -> impl IntoResponse {
+    // handle this error
+    // honestly we should restructure this
+    // instead of creating a new Gpio context
+    // we should have main handle the reference count
+    // likely with arc
+    // then setup is a separate function (?)
+    let _gpio = Gpio::new();
+
+    // extract this to a helper func later on
+    let now = SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .unwrap_or_default()
+        .as_secs();
+    let hours = (now / 3600) % 24;
+    let minutes = (now / 60) % 60;
+    let seconds = now % 60;
+
+    let log_entry = format!(
+        r#"<div class="log-entry">
+            <span class="log-time">[{:02}:{:02}:{:02}]</span>
+            <span class="log-info">GPIO initialized</span>
+        </div>"#,
+        hours, minutes, seconds
+    );
+
+    Html(log_entry)
 }
 
 async fn ws_handler(ws: upgrade::IncomingUpgrade) -> impl IntoResponse {
