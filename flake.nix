@@ -59,6 +59,7 @@
             cargo-deny
             cargo-edit
             cargo-watch
+            systemfd
           ] ++ builtins.attrValues ccPkgs;
 
           CARGO_BUILD_TARGET = let 
