@@ -1,8 +1,169 @@
 body {
+    font-family: Courier new, monospace;
+    font-size: 12px;
+    margin: 0;
+    padding: 20px;
     background-color: black;
+    color: white;
+    box-sizing: border-box;
 }
 
 button {
+    font-family: inherit;
+}
+
+.main-layout {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 20px;
+    height: calc(100vh - 140px);
+}
+
+.gpio-section {
+    flex: 1;
+    border: 1px solid gray;
+    border-radius: 10px;
+    padding: 10px;
+    background-color: black;
+    overflow: auto;
+}
+
+.controls-section {
+    flex: 3;
+    display: flex;
+    flex-direction: column;
+}
+
+.controls-container {
+    display: flex;
+    gap: 15px;
+    flex: 1;
+    margin-bottom: 15px;
+}
+
+.queue-list {
+    flex: 1;
+    border: 1px solid gray;
+    border-radius: 10px;
+    padding: 15px;
+    background-color: black;
+    overflow: auto;
+}
+
+.options {
+    flex: 1;
+    border: 1px solid gray;
+    border-radius: 10px;
+    padding: 15px;
+    background-color: black;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.log-box {
+    height: 150px;
+    border: 1px solid gray;
+    border-radius: 10px;
+    padding: 15px;
+    background-color: black;
+    overflow-y: auto;
+}
+
+.controls {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 20px;
+}
+
+.control-btn {
+    padding: 10px 15px;
+    border: none;
+    border-radius: 5px;
     background-color: green;
     color: white;
+    cursor: pointer;
+}
+
+.control-btn:hover {
+    background-color: darkgreen;
+}
+
+.gpio-layout {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    width: 100%;
+}
+
+.gpio-row {
+    display: flex;
+    gap: 8px;
+}
+
+.pin {
+    flex: 1;
+    padding: 8px;
+    border: none;
+    border-radius: 5px;
+    font-size: 14px;
+    text-align: center;
+    cursor: pointer;
+}
+
+.pin:disabled {
+    opacity: 0.8;
+    cursor: not-allowed;
+}
+
+.pin.gpio {
+    background-color: green;
+    color: white;
+}
+
+.pin.gpio:hover {
+    background-color: darkgreen;
+}
+
+.pin.power {
+    background-color: red;
+    color: white;
+}
+
+.pin.ground {
+    background-color: black;
+    color: white;
+    border: 1px solid gray;
+}
+
+.pin-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px;
+    border-bottom: 1px solid gray;
+    margin-bottom: 8px;
+}
+
+.pin-number {
+    font-weight: bold;
+}
+
+.log-entry {
+    margin-bottom: 5px;
+    border-bottom: 1px dotted gray;
+    padding-bottom: 5px;
+}
+
+.log-time {
+    color: white;
+    margin-right: 5px;
+}
+
+.log-info {
+    color: lightblue;
+}
+
+.log-error {
+    color: crimson;
 }

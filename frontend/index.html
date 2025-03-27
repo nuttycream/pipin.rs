@@ -7,98 +7,128 @@
         <link href="style.css" rel="stylesheet">
         <script src="./htmx.min.js"></script>
     </head>
-    <body>
+    <body hx-ext="ws">
         <div class="controls">
-            <button type="button" id="setup" class="control-btn">Setup</button>
+            <h1>pipin.rs</h1>
+            <button hx-get="/setup" 
+                hx-target="#log-container"
+                hx-swap="afterbegin"
+                type="button" id="setup" class="control-btn">
+                Setup
+            </button>
             <button type="button" id="toggle-all" class="control-btn">Toggle All</button>
+            <button type="button" id="clear-log" class="control-btn">Clear Log</button>
         </div>
-        <div class="container">
-            <div class="gpio-layout">
-                <div class="gpio-row">
-                    <button class="pin power" disabled>3.3V</button>
-                    <button class="pin power" disabled>5V</button>
-                </div>
-                <div class="gpio-row">
-                    <button class="pin gpio" data-pin="2">GPIO 2</button>
-                    <button class="pin power" disabled>5V</button>
-                </div>
-                <div class="gpio-row">
-                    <button class="pin gpio" data-pin="3">GPIO 3</button>
-                    <button class="pin ground" disabled>Ground</button>
-                </div>
-                <div class="gpio-row">
-                    <button class="pin gpio" data-pin="4">GPIO 4</button>
-                    <button class="pin gpio" data-pin="14">GPIO 14</button>
-                </div>
-                <div class="gpio-row">
-                    <button class="pin ground" disabled>Ground</button>
-                    <button class="pin gpio" data-pin="15">GPIO 15</button>
-                </div>
-                <div class="gpio-row">
-                    <button class="pin gpio" data-pin="17">GPIO 17</button>
-                    <button class="pin gpio" data-pin="18">GPIO 18</button>
-                </div>
-                <div class="gpio-row">
-                    <button class="pin gpio" data-pin="27">GPIO 27</button>
-                    <button class="pin ground" disabled>Ground</button>
-                </div>
-                <div class="gpio-row">
-                    <button class="pin gpio" data-pin="22">GPIO 22</button>
-                    <button class="pin gpio" data-pin="23">GPIO 23</button>
-                </div>
-                <div class="gpio-row">
-                    <button class="pin power" disabled>3.3V</button>
-                    <button class="pin gpio" data-pin="24">GPIO 24</button>
-                </div>
-                <div class="gpio-row">
-                    <button class="pin gpio" data-pin="10">GPIO 10</button>
-                    <button class="pin ground" disabled>Ground</button>
-                </div>
-                <div class="gpio-row">
-                    <button class="pin gpio" data-pin="9">GPIO 9</button>
-                    <button class="pin gpio" data-pin="25">GPIO 25</button>
-                </div>
-                <div class="gpio-row">
-                    <button class="pin gpio" data-pin="11">GPIO 11</button>
-                    <button class="pin gpio" data-pin="8">GPIO 8</button>
-                </div>
-                <div class="gpio-row">
-                    <button class="pin ground" disabled>Ground</button>
-                    <button class="pin gpio" data-pin="7">GPIO 7</button>
-                </div>
-                <div class="gpio-row">
-                    <button class="pin gpio" data-pin="0">GPIO 0</button>
-                    <button class="pin gpio" data-pin="1">GPIO 1</button>
-                </div>
-                <div class="gpio-row">
-                    <button class="pin gpio" data-pin="5">GPIO 5</button>
-                    <button class="pin ground" disabled>Ground</button>
-                </div>
-                <div class="gpio-row">
-                    <button class="pin gpio" data-pin="6">GPIO 6</button>
-                    <button class="pin gpio" data-pin="12">GPIO 12</button>
-                </div>
-                <div class="gpio-row">
-                    <button class="pin gpio" data-pin="13">GPIO 13</button>
-                    <button class="pin ground" disabled>Ground</button>
-                </div>
-                <div class="gpio-row">
-                    <button class="pin gpio" data-pin="19">GPIO 19</button>
-                    <button class="pin gpio" data-pin="16">GPIO 16</button>
-                </div>
-                <div class="gpio-row">
-                    <button class="pin gpio" data-pin="26">GPIO 26</button>
-                    <button class="pin gpio" data-pin="20">GPIO 20</button>
-                </div>
-                <div class="gpio-row">
-                    <button class="pin ground" disabled>Ground</button>
-                    <button class="pin gpio" data-pin="21">GPIO 21</button>
+        
+        <div class="main-layout">
+            <div class="gpio-section">
+                <div class="gpio-layout">
+                    <div class="gpio-row">
+                        <button class="pin power" disabled>3.3V</button>
+                        <button class="pin power" disabled>5V</button>
+                    </div>
+                    <div class="gpio-row">
+                        <button class="pin gpio" data-pin="2">GPIO 2</button>
+                        <button class="pin power" disabled>5V</button>
+                    </div>
+                    <div class="gpio-row">
+                        <button class="pin gpio" data-pin="3">GPIO 3</button>
+                        <button class="pin ground" disabled>GND</button>
+                    </div>
+                    <div class="gpio-row">
+                        <button class="pin gpio" data-pin="4">GPIO 4</button>
+                        <button class="pin gpio" data-pin="14">GPIO 14</button>
+                    </div>
+                    <div class="gpio-row">
+                        <button class="pin ground" disabled>GND</button>
+                        <button class="pin gpio" data-pin="15">GPIO 15</button>
+                    </div>
+                    <div class="gpio-row">
+                        <button class="pin gpio" data-pin="17">GPIO 17</button>
+                        <button class="pin gpio" data-pin="18">GPIO 18</button>
+                    </div>
+                    <div class="gpio-row">
+                        <button class="pin gpio" data-pin="27">GPIO 27</button>
+                        <button class="pin ground" disabled>GND</button>
+                    </div>
+                    <div class="gpio-row">
+                        <button class="pin gpio" data-pin="22">GPIO 22</button>
+                        <button class="pin gpio" data-pin="23">GPIO 23</button>
+                    </div>
+                    <div class="gpio-row">
+                        <button class="pin power" disabled>3.3V</button>
+                        <button class="pin gpio" data-pin="24">GPIO 24</button>
+                    </div>
+                    <div class="gpio-row">
+                        <button class="pin gpio" data-pin="10">GPIO 10</button>
+                        <button class="pin ground" disabled>GND</button>
+                    </div>
+                    <div class="gpio-row">
+                        <button class="pin gpio" data-pin="9">GPIO 9</button>
+                        <button class="pin gpio" data-pin="25">GPIO 25</button>
+                    </div>
+                    <div class="gpio-row">
+                        <button class="pin gpio" data-pin="11">GPIO 11</button>
+                        <button class="pin gpio" data-pin="8">GPIO 8</button>
+                    </div>
+                    <div class="gpio-row">
+                        <button class="pin ground" disabled>GND</button>
+                        <button class="pin gpio" data-pin="7">GPIO 7</button>
+                    </div>
+                    <div class="gpio-row">
+                        <button class="pin gpio" data-pin="0">GPIO 0</button>
+                        <button class="pin gpio" data-pin="1">GPIO 1</button>
+                    </div>
+                    <div class="gpio-row">
+                        <button class="pin gpio" data-pin="5">GPIO 5</button>
+                        <button class="pin ground" disabled>GND</button>
+                    </div>
+                    <div class="gpio-row">
+                        <button class="pin gpio" data-pin="6">GPIO 6</button>
+                        <button class="pin gpio" data-pin="12">GPIO 12</button>
+                    </div>
+                    <div class="gpio-row">
+                        <button class="pin gpio" data-pin="13">GPIO 13</button>
+                        <button class="pin ground" disabled>GND</button>
+                    </div>
+                    <div class="gpio-row">
+                        <button class="pin gpio" data-pin="19">GPIO 19</button>
+                        <button class="pin gpio" data-pin="16">GPIO 16</button>
+                    </div>
+                    <div class="gpio-row">
+                        <button class="pin gpio" data-pin="26">GPIO 26</button>
+                        <button class="pin gpio" data-pin="20">GPIO 20</button>
+                    </div>
+                    <div class="gpio-row">
+                        <button class="pin ground" disabled>GND</button>
+                        <button class="pin gpio" data-pin="21">GPIO 21</button>
+                    </div>
                 </div>
             </div>
             
-            
+            <div class="controls-section">
+                <div class="controls-container">
+                    <div class="queue-list">
+                        <h2>Queue</h2>
+                        <div id="active-pins">
+                            <div class="pin-item">
+                                <span class="pin-number">GPIO 17</span>
+                            </div>
+                            <div class="pin-item">
+                                <span class="pin-number">Delay 500ms</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="options">
+                        <h2>Queue Options</h2>
+                    </div>
+                </div>
+                
+                <div class="log-box" id="log-container">
+                </div>
+            </div>
         </div>
-
         <script>
         </script>
     </body>
