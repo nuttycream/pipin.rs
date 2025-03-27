@@ -1,14 +1,14 @@
-ROOTNAME=target/aarch64-unknown-linux-musl/release/gpio_controller
+ROOTNAME=target/aarch64-unknown-linux-musl/release/pipinrs
 
 REMOTE_HOST=pi08@192.168.68.70
 #REMOTE_HOST=pi08@raspberrypi08
-REMOTE_DIR=~/gpio_controller/
+REMOTE_DIR=~/pipinrs/
 
 build:
 	cargo build
 
 release:
-	cargo build --release
+	cargo build --release --target aarch64-unknown-linux-musl
 
 clean: 
 	cargo clean
