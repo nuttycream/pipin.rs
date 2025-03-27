@@ -26,9 +26,13 @@ scp user@host:<insert downloaded file here>:<raspberry pi folder>
 cd <directory>
 sudo ./pipinctrlrs # sudo is needed for direct registry access
 ```
-- on your browser, navigate to webpage; defaults to `0.0.0.0:3000` or `localhost:3000`
+- navigate to webpage; defaults to `0.0.0.0:3000` or `localhost:3000`
 
-`Note: you can also navigate on any machine connected to the same network, by using the raspberry pi's IP address and port number, example: http://192.168.68.70:3000`
+```
+Note: you can also navigate on any machine connected to the same network,
+by using the raspberry pi's IP address and port number,
+example: http://192.168.68.70:3000
+```
 
 - select chipset (defaults to BCM2710)
 - press 'Initialize'
