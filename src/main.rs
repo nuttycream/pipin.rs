@@ -57,6 +57,8 @@ async fn main() -> Result<(), Box<dyn Error>> {
         .route("/style.css", get(serve_css))
         .route("/ws", get(ws_handler))
         .route("/setup", get(setup))
+        .route("/reset", get(reset))
+        .route("/terminate", get(terminate))
         .route("/{pin}", get(toggle))
         .with_state(gpio);
 
@@ -147,6 +149,65 @@ async fn setup(State(gpio): State<Arc<Mutex<Gpio>>>) -> impl IntoResponse {
     };
 
     // extract this to a helper func later on
+    let now = SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .unwrap_or_default()
+        .as_secs();
+    let hours = (now / 3600) % 24;
+    let minutes = (now / 60) % 60;
+    let seconds = now % 60;
+
+    let log_entry = format!(
+        r#"<div class="log-entry">
+            <span class="log-time">[{:02}:{:02}:{:02}]</span>
+            <span class="log-info">{}</span>
+        </div>"#,
+        hours, minutes, seconds, res
+    );
+
+    Html(log_entry)
+}
+
+async fn reset(State(gpio): State<Arc<Mutex<Gpio>>>) -> impl IntoResponse {
+    let mut gpio = gpio.lock().unwrap();
+    let res = match gpio.reset() {
+        Ok(_) => "GPIO reset",
+        Err(e) => {
+            println!("{e}");
+            "Failed to reset gpio"
+        }
+    };
+
+    // extract this to a helper func later on
+    let now = SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .unwrap_or_default()
+        .as_secs();
+    let hours = (now / 3600) % 24;
+    let minutes = (now / 60) % 60;
+    let seconds = now % 60;
+
+    let log_entry = format!(
+        r#"<div class="log-entry">
+            <span class="log-time">[{:02}:{:02}:{:02}]</span>
+            <span class="log-info">{}</span>
+        </div>"#,
+        hours, minutes, seconds, res
+    );
+
+    Html(log_entry)
+}
+
+async fn terminate(State(gpio): State<Arc<Mutex<Gpio>>>) -> impl IntoResponse {
+    let mut gpio = gpio.lock().unwrap();
+    let res = match gpio.terminate() {
+        Ok(_) => "GPIO terminated",
+        Err(e) => {
+            println!("{e}");
+            "Failed to terminate gpio"
+        }
+    };
+
     let now = SystemTime::now()
         .duration_since(UNIX_EPOCH)
         .unwrap_or_default()
