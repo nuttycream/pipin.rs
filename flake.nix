@@ -67,7 +67,7 @@
             targets = (builtins.fromTOML toolchainStr).toolchain.targets;
           in builtins.head targets;
 
-          CARGO_TARGET_AARCH64_UNKNOWN_LINUX_GCC_LINKER = cc.musl;
+          CARGO_TARGET_AARCH64_UNKNOWN_LINUX_MUSL_LINKER = cc.musl;
           CC_AARCH64_UNKNOWN_LINUX_MUSL = cc.musl;
           LIBCLANG_PATH="${pkgs.libclang.lib}/lib";
           RUST_SRC_PATH = "${pkgs.rustToolchain}/lib/rustlib/src/rust/library";
