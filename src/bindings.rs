@@ -19,11 +19,12 @@ pub trait GpioController: Sized {
     fn new() -> Self;
     fn setup(&mut self) -> Result<(), GpioError>;
     fn reset(&mut self) -> Result<(), GpioError>;
+    fn terminate(&mut self) -> Result<(), GpioError>;
     fn switch_hardware(&self, option: i32) -> Result<(), GpioError>;
     fn set_as_output(&self, pin: i32) -> Result<(), GpioError>;
     fn set_high(&mut self, pin: i32) -> Result<(), GpioError>;
     fn set_low(&mut self, pin: i32) -> Result<(), GpioError>;
-    fn toggle(&self, pin: i32) -> Result<bool, GpioError>;
+    fn toggle(&mut self, pin: i32) -> Result<bool, GpioError>;
     fn get_status(&self, pin: i32) -> bool;
 }
 
@@ -59,6 +60,17 @@ impl GpioController for Gpio {
         Ok(())
     }
 
+    fn terminate(&mut self) -> Result<(), GpioError> {
+        unsafe {
+            if terminate_io() < 0 {
+                return Err(GpioError::Terminate);
+            }
+        }
+
+        self.initialized = false;
+        Ok(())
+    }
+
     fn switch_hardware(&self, option: i32) -> Result<(), GpioError> {
         unsafe {
             if switch_hardware_address(option) < 0 {
@@ -70,6 +82,10 @@ impl GpioController for Gpio {
     }
 
     fn set_as_output(&self, pin: i32) -> Result<(), GpioError> {
+        if pin < 0 || pin >= 27 {
+            return Err(GpioError::InvalidPin(pin));
+        }
+
         unsafe {
             if set_gpio_out(pin) < 0 {
                 return Err(GpioError::Direction(pin));
@@ -79,39 +95,72 @@ impl GpioController for Gpio {
     }
 
     fn set_high(&mut self, pin: i32) -> Result<(), GpioError> {
+        if pin < 0 || pin >= 27 {
+            return Err(GpioError::InvalidPin(pin));
+        }
         unsafe {
             if toggle_gpio(1, pin) < 0 {
                 return Err(GpioError::Set(pin));
             }
         }
+
+        self.pin_status[pin as usize] = true;
+
         Ok(())
     }
 
     fn set_low(&mut self, pin: i32) -> Result<(), GpioError> {
+        if pin < 0 || pin >= 27 {
+            return Err(GpioError::InvalidPin(pin));
+        }
         unsafe {
             if toggle_gpio(0, pin) < 0 {
                 return Err(GpioError::Set(pin));
             }
         }
+
+        self.pin_status[pin as usize] = false;
+
         Ok(())
     }
 
-    fn toggle(&self, pin: i32) -> Result<bool, GpioError> {
-        Ok(true)
+    fn toggle(&mut self, pin: i32) -> Result<bool, GpioError> {
+        if pin < 0 || pin >= 27 {
+            return Err(GpioError::Set(pin));
+        }
+
+        let current_state = self.pin_status[pin as usize];
+        let new_state = !current_state;
+
+        // Set to the new state
+        if new_state {
+            self.set_high(pin)?;
+        } else {
+            self.set_low(pin)?;
+        }
+
+        Ok(new_state)
     }
 
     fn get_status(&self, pin: i32) -> bool {
-        return false;
+        if pin >= 0 && pin < 27 {
+            self.pin_status[pin as usize]
+        } else {
+            false
+        }
     }
 }
 
 impl Drop for Gpio {
     fn drop(&mut self) {
-        if self.initialized {
-            unsafe {
-                terminate_io();
-            }
-            self.initialized = false;
+        let _ = self.reset();
+
+        // we dont need to handle the error
+        // here since failing at munmap()
+        // means mmap() wasn't executed
+        // so do nothing... and drop still
+        unsafe {
+            terminate_io();
         }
     }
 }
