@@ -16,8 +16,18 @@
                 type="button" id="setup" class="control-btn">
                 Setup
             </button>
-            <button type="button" id="toggle-all" class="control-btn">Toggle All</button>
-            <button type="button" id="clear-log" class="control-btn">Clear Log</button>
+            <button hx-get="/reset" 
+                hx-target="#log-container"
+                hx-swap="afterbegin"
+                type="button" id="reset" class="control-btn">
+                Reset
+            </button>
+            <button hx-get="/terminate" 
+                hx-target="#log-container"
+                hx-swap="afterbegin"
+                type="button" id="terminate" class="control-btn">
+                Terminate
+            </button>
         </div>
         
         <div class="main-layout">
@@ -48,7 +58,11 @@
                         <button class="pin gpio" data-pin="15">GPIO 15</button>
                     </div>
                     <div class="gpio-row">
-                        <button class="pin gpio" data-pin="17">GPIO 17</button>
+                        <button class="pin gpio" 
+                            data-pin="17" 
+                            hx-get="/17" 
+                            hx-target="#log-container" 
+                            hx-swap="afterbegin">GPIO 17</button>
                         <button class="pin gpio" data-pin="18">GPIO 18</button>
                     </div>
                     <div class="gpio-row">
@@ -112,20 +126,22 @@
             
             <div class="controls-section">
                 <div class="controls-container">
+                    <div class="options">
+                        <h2>Queue Options</h2>
+                    </div>
+
                     <div class="queue-list">
                         <h2>Queue</h2>
                         <div id="active-pins">
                             <div class="pin-item">
                                 <span class="pin-number">GPIO 17</span>
+                                <span class="pin-delete">DELETE</span>
                             </div>
                             <div class="pin-item">
                                 <span class="pin-number">Delay 500ms</span>
+                                <span class="pin-delete">DELETE</span>
                             </div>
                         </div>
-                    </div>
-                    
-                    <div class="options">
-                        <h2>Queue Options</h2>
                     </div>
                 </div>
                 

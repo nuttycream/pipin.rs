@@ -149,6 +149,12 @@ button {
     font-weight: bold;
 }
 
+.pin-delete {
+    font-weight: bold;
+    color: red;
+    cursor: pointer;
+}
+
 .log-entry {
     margin-bottom: 5px;
     border-bottom: 1px dotted gray;
