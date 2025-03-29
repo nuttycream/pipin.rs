@@ -38,6 +38,10 @@ impl GpioController for Gpio {
     }
 
     fn setup(&mut self) -> Result<(), GpioError> {
+        if self.initialized {
+            return Ok(());
+        }
+
         unsafe {
             if setup_io() < 0 {
                 return Err(GpioError::Setup);
@@ -130,10 +134,11 @@ impl GpioController for Gpio {
             return Err(GpioError::Set(pin));
         }
 
+        self.set_as_output(pin)?;
+
         let current_state = self.pin_status[pin as usize];
         let new_state = !current_state;
 
-        // Set to the new state
         if new_state {
             self.set_high(pin)?;
         } else {
