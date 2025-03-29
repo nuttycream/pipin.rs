@@ -38,11 +38,7 @@
                         <button class="pin power" disabled>5V</button>
                     </div>
                     <div class="gpio-row">
-                        <button class="pin gpio" 
-                            data-pin="2" 
-                            hx-get="/2" 
-                            hx-target="#log-container" 
-                            hx-swap="afterbegin">GPIO 2</button>
+                        <button class="pin gpio" data-pin="2">GPIO 2</button>
                         <button class="pin power" disabled>5V</button>
                     </div>
                     <div class="gpio-row">
@@ -58,11 +54,7 @@
                         <button class="pin gpio" data-pin="15">GPIO 15</button>
                     </div>
                     <div class="gpio-row">
-                        <button class="pin gpio" 
-                            data-pin="17" 
-                            hx-get="/17" 
-                            hx-target="#log-container" 
-                            hx-swap="afterbegin">GPIO 17</button>
+                        <button class="pin gpio" data-pin="17">GPIO 17</button>
                         <button class="pin gpio" data-pin="18">GPIO 18</button>
                     </div>
                     <div class="gpio-row">
@@ -150,6 +142,20 @@
             </div>
         </div>
         <script>
+        document.addEventListener('DOMContentLoaded', function() {
+        const gpioButtons = document.querySelectorAll('.pin.gpio');
+
+        gpioButtons.forEach(button => {
+            const pinNumber = button.getAttribute('data-pin');
+
+            button.setAttribute('hx-get', `/${pinNumber}`);
+            button.setAttribute('hx-target', '#log-container');
+            button.setAttribute('hx-swap', 'afterbegin');
+            });
+        if (window.htmx) {
+            window.htmx.process(document.body);
+        }
+        });
         </script>
     </body>
 </html>
