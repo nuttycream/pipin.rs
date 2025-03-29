@@ -28,7 +28,11 @@
                         <button class="pin power" disabled>5V</button>
                     </div>
                     <div class="gpio-row">
-                        <button class="pin gpio" data-pin="2">GPIO 2</button>
+                        <button class="pin gpio" 
+                            data-pin="2" 
+                            hx-get="/2" 
+                            hx-target="#log-container" 
+                            hx-swap="afterbegin">GPIO 2</button>
                         <button class="pin power" disabled>5V</button>
                     </div>
                     <div class="gpio-row">
