@@ -25,7 +25,8 @@ pub trait GpioController: Sized {
     fn set_high(&mut self, pin: i32) -> Result<(), GpioError>;
     fn set_low(&mut self, pin: i32) -> Result<(), GpioError>;
     fn toggle(&mut self, pin: i32) -> Result<bool, GpioError>;
-    fn get_status(&self, pin: i32) -> bool;
+    fn get_pin_status(&self, pin: i32) -> bool;
+    fn is_initialized(&self) -> bool;
 }
 
 impl GpioController for Gpio {
@@ -142,12 +143,16 @@ impl GpioController for Gpio {
         Ok(new_state)
     }
 
-    fn get_status(&self, pin: i32) -> bool {
+    fn get_pin_status(&self, pin: i32) -> bool {
         if pin >= 0 && pin < 27 {
             self.pin_status[pin as usize]
         } else {
             false
         }
+    }
+
+    fn is_initialized(&self) -> bool {
+        return self.initialized;
     }
 }
 
