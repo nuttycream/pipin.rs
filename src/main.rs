@@ -12,7 +12,12 @@ use axum::{
         Html,
         IntoResponse,
     },
-    routing::get,
+    routing::{
+        delete,
+        get,
+        post,
+    },
+    Form,
     Router,
 };
 use bindings::{
@@ -25,6 +30,7 @@ use fastwebsockets::{
     WebSocketError,
 };
 use listenfd::ListenFd;
+use serde::Deserialize;
 //use logger::LogType;
 use std::{
     env,
@@ -42,8 +48,23 @@ use std::{
 use tokio::net::TcpListener;
 
 #[derive(Clone)]
+enum Action {
+    SetHigh(i32),
+    SetLow(i32),
+    Delay(i32),
+    WaitFor(i32),
+}
+
+#[derive(Deserialize)]
+struct ActionForm {
+    action_type: String,
+    value: i32,
+}
+
+#[derive(Clone)]
 struct AppState {
     gpio: Arc<Mutex<Gpio>>,
+    actions: Vec<Action>,
 }
 
 #[tokio::main]
@@ -56,6 +77,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
 
     let appstate = AppState {
         gpio: Arc::new(Mutex::new(Gpio::new())),
+        actions: Vec::new(),
     };
 
     let app = Router::new()
@@ -67,6 +89,8 @@ async fn main() -> Result<(), Box<dyn Error>> {
         .route("/reset", get(reset))
         .route("/terminate", get(terminate))
         .route("/{pin}", get(toggle))
+        .route("/add-action", post(add_action))
+        .route("/delete-action/{index}", delete(delete_action))
         .with_state(appstate);
 
     let mut listenfd = ListenFd::from_env();
@@ -93,6 +117,49 @@ async fn main() -> Result<(), Box<dyn Error>> {
     .await?;
 
     Ok(())
+}
+
+async fn delete_action(State(appstate): State<AppState>, Path(index): Path<usize>) {
+    println!("boom")
+}
+
+async fn add_action(
+    State(mut appstate): State<AppState>,
+    Form(input): Form<ActionForm>,
+) -> Html<String> {
+    let (action, display_text) = match input.action_type.as_str() {
+        "set-high" => (
+            Action::SetHigh(input.value),
+            format!("GPIO:{} Set High", input.value),
+        ),
+        "set-low" => (
+            Action::SetLow(input.value),
+            format!("GPIO:{} Set Low", input.value),
+        ),
+        "delay" => (
+            Action::Delay(input.value),
+            format!("Delay {}ms", input.value),
+        ),
+        "wait-for" => (
+            Action::WaitFor(input.value),
+            format!("Wait For GPIO:{}", input.value),
+        ),
+        _ => return Html(format!("put this in a log somewhere")),
+    };
+
+    appstate.actions.push(action);
+
+    Html(format!(
+        r#"<div class="pin-item" 
+        hx-delete="/delete-action/{}" 
+        hx-target="closest .pin-item" 
+        hx-swap="outerHTML">
+            <span class="pin-number">{}</span>
+            <span class="pin-delete">DELETE</span>
+        </div>"#,
+        appstate.actions.len() - 1,
+        display_text
+    ))
 }
 
 async fn toggle(State(appstate): State<AppState>, Path(pin): Path<String>) -> impl IntoResponse {
