@@ -15,18 +15,23 @@ fn main() {
         .expect("cannot canonicalize path");
 
     let target = env::var("TARGET").unwrap_or_else(|_| String::from("x86_64-unknown-linux-gnu"));
-    println!("cargo:warning=Building for target: {}", target);
+    println!("cargo:warning=target: {}", target);
 
-    let compiler = if target == "aarch64-unknown-linux-musl" {
-        env::var("CC_AARCH64_UNKNOWN_LINUX_MUSL")
-            .unwrap_or_else(|_| String::from("aarch64-unknown-linux-musl-gcc"))
+    let (compiler, archiver) = if target == "aarch64-unknown-linux-musl" {
+        let compiler = env::var("CC_AARCH64_UNKNOWN_LINUX_MUSL")
+            .unwrap_or_else(|_| String::from("aarch64-unknown-linux-musl-gcc"));
+        let archiver = env::var("AR_AARCH64_UNKNOWN_LINUX_MUSL")
+            .unwrap_or_else(|_| String::from("aarch64-unknown-linux-musl-ar"));
+        (compiler, archiver)
     } else {
-        String::from("clang")
+        (String::from("clang"), String::from("ar"))
     };
-    println!("cargo:warning=Using compiler: {}", compiler);
 
-    let obj_path = libdir_path.join("gpio.o");
-    let lib_path = libdir_path.join("libgpio.a");
+    println!("cargo:warning=compiler: {}", compiler);
+
+    let target_suffix = target.replace('-', "_");
+    let obj_path = libdir_path.join(format!("gpio_{}.o", target_suffix));
+    let lib_path = libdir_path.join(format!("libgpio_{}.a", target_suffix));
 
     let status = Command::new(&compiler)
         .current_dir(&libdir_path)
@@ -41,26 +46,20 @@ fn main() {
         panic!("Failed to compile gpio.c");
     }
 
-    let archiver = if target == "aarch64-unknown-linux-musl" {
-        env::var("AR_AARCH64_UNKNOWN_LINUX_MUSL")
-            .unwrap_or_else(|_| String::from("aarch64-unknown-linux-musl-ar"))
-    } else {
-        String::from("ar")
-    };
     println!("cargo:warning=archiver: {}", archiver);
 
     let status = Command::new(&archiver)
         .current_dir(&libdir_path)
         .arg("rcs")
-        .arg(lib_path)
-        .arg(obj_path)
+        .arg(&lib_path)
+        .arg(&obj_path)
         .status()
-        .expect(&format!("Failed to execute {}", archiver));
+        .expect(&format!("failed to execute {}", archiver));
 
     if !status.success() {
-        panic!("Failed to create static library");
+        panic!("failed to create static library");
     }
 
     println!("cargo:rustc-link-search={}", libdir_path.to_str().unwrap());
-    println!("cargo:rustc-link-lib=gpio");
+    println!("cargo:rustc-link-lib=gpio_{}", target_suffix);
 }
