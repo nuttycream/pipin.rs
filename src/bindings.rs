@@ -38,7 +38,7 @@ impl GpioController for Gpio {
     }
 
     fn setup(&mut self) -> Result<(), GpioError> {
-        if self.is_initialized()? {
+        if self.initialized {
             return Ok(());
         }
 
