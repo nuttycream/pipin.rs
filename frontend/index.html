@@ -3,7 +3,7 @@
     <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1">
-        <title>GPIO Controller</title>
+        <title>pipin.rs</title>
         <link href="style.css" rel="stylesheet">
         <script src="./htmx.min.js"></script>
     </head>
@@ -119,20 +119,28 @@
             <div class="controls-section">
                 <div class="controls-container">
                     <div class="options">
-                        <h2>Queue Options</h2>
+                        <h2>Options</h2>
                     </div>
 
                     <div class="queue-list">
                         <h2>Queue</h2>
+                        <form hx-post="/add-action" 
+                            hx-target="#active-pins"
+                            hx-swap="beforeend"
+                            class="action-form">
+                            <div class="action-options">
+                                <select name="action_type" id="actions" class="action-select">
+                                    <option value="set-low">Set Low</option>
+                                    <option value="set-high">Set High</option>
+                                    <option value="delay">Delay</option>
+                                    <option value="wait-for">Wait For</option>
+                                </select>
+                                <input type="number" name="value" value="50" class="action-input">
+                            </div>
+                            <button type="submit" class="action-btn">Add To Queue</button>
+                        </form>
+                        <br>
                         <div id="active-pins">
-                            <div class="pin-item">
-                                <span class="pin-number">GPIO 17</span>
-                                <span class="pin-delete">DELETE</span>
-                            </div>
-                            <div class="pin-item">
-                                <span class="pin-number">Delay 500ms</span>
-                                <span class="pin-delete">DELETE</span>
-                            </div>
                         </div>
                     </div>
                 </div>
@@ -143,18 +151,18 @@
         </div>
         <script>
         document.addEventListener('DOMContentLoaded', function() {
-        const gpioButtons = document.querySelectorAll('.pin.gpio');
+            const gpioButtons = document.querySelectorAll('.pin.gpio');
 
         gpioButtons.forEach(button => {
-            const pinNumber = button.getAttribute('data-pin');
+        const pinNumber = button.getAttribute('data-pin');
 
-            button.setAttribute('hx-get', `/${pinNumber}`);
-            button.setAttribute('hx-target', '#log-container');
-            button.setAttribute('hx-swap', 'afterbegin');
-            });
-        if (window.htmx) {
-            window.htmx.process(document.body);
-        }
+        button.setAttribute('hx-get', `/${pinNumber}`);
+        button.setAttribute('hx-target', '#log-container');
+        button.setAttribute('hx-swap', 'afterbegin');
+        });
+
+        window.htmx.process(document.body);
+
         });
         </script>
     </body>

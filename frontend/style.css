@@ -136,6 +136,54 @@ button {
     border: 1px solid gray;
 }
 
+.action-form {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    width: 100%;
+}
+
+.action-select, .action-input {
+    font-family: inherit;
+    padding: 8px;
+    border: 1px solid gray;
+    border-radius: 5px;
+    background-color: black;
+    color: white;
+    min-width: 0; 
+}
+
+.action-select {
+    flex: 2;
+}
+
+.action-input {
+    flex: 1;
+    text-align: center;
+}
+
+.action-btn {
+    padding: 8px 15px;
+    border: none;
+    border-radius: 5px;
+    background-color: green;
+    color: white;
+    cursor: pointer;
+    font-size: 12px;
+}
+
+.action-btn:hover {
+    background-color: darkgreen;
+}
+
+.action-options {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    width: 100%;
+    box-sizing: border-box;
+}
+
 .pin-item {
     display: flex;
     justify-content: space-between;
