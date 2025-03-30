@@ -11,6 +11,7 @@ pub enum GpioError {
     Set(i32),
     Terminate,
     Device,
+    NotInitialized,
 }
 
 impl GpioError {}
@@ -25,6 +26,7 @@ impl fmt::Display for GpioError {
             GpioError::Terminate => write!(f, "Failed to terminate"),
             GpioError::Device => write!(f, "Failed to switch device"),
             GpioError::InvalidPin(pin) => write!(f, "Invalid gpio pin {}", pin),
+            GpioError::NotInitialized => write!(f, "GPIO Not Initialized"),
         }
     }
 }

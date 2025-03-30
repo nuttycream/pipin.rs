@@ -25,8 +25,8 @@ pub trait GpioController: Sized {
     fn set_high(&mut self, pin: i32) -> Result<(), GpioError>;
     fn set_low(&mut self, pin: i32) -> Result<(), GpioError>;
     fn toggle(&mut self, pin: i32) -> Result<bool, GpioError>;
-    fn get_pin_status(&self, pin: i32) -> bool;
-    fn is_initialized(&self) -> bool;
+    fn get_pin_status(&self, pin: i32) -> Result<bool, GpioError>;
+    fn is_initialized(&self) -> Result<bool, GpioError>;
 }
 
 impl GpioController for Gpio {
@@ -38,7 +38,7 @@ impl GpioController for Gpio {
     }
 
     fn setup(&mut self) -> Result<(), GpioError> {
-        if self.initialized {
+        if self.is_initialized()? {
             return Ok(());
         }
 
@@ -56,6 +56,8 @@ impl GpioController for Gpio {
     }
 
     fn reset(&mut self) -> Result<(), GpioError> {
+        self.is_initialized()?;
+
         for pin in 0..27 {
             if self.pin_status[pin as usize] {
                 self.set_low(pin)?;
@@ -66,6 +68,8 @@ impl GpioController for Gpio {
     }
 
     fn terminate(&mut self) -> Result<(), GpioError> {
+        self.is_initialized()?;
+
         unsafe {
             if terminate_io() < 0 {
                 return Err(GpioError::Terminate);
@@ -77,6 +81,8 @@ impl GpioController for Gpio {
     }
 
     fn switch_hardware(&self, option: i32) -> Result<(), GpioError> {
+        self.is_initialized()?;
+
         unsafe {
             if switch_hardware_address(option) < 0 {
                 return Err(GpioError::Device);
@@ -87,6 +93,8 @@ impl GpioController for Gpio {
     }
 
     fn set_as_output(&self, pin: i32) -> Result<(), GpioError> {
+        self.is_initialized()?;
+
         if pin < 0 || pin >= 27 {
             return Err(GpioError::InvalidPin(pin));
         }
@@ -100,6 +108,8 @@ impl GpioController for Gpio {
     }
 
     fn set_high(&mut self, pin: i32) -> Result<(), GpioError> {
+        self.is_initialized()?;
+
         if pin < 0 || pin >= 27 {
             return Err(GpioError::InvalidPin(pin));
         }
@@ -115,6 +125,8 @@ impl GpioController for Gpio {
     }
 
     fn set_low(&mut self, pin: i32) -> Result<(), GpioError> {
+        self.is_initialized()?;
+
         if pin < 0 || pin >= 27 {
             return Err(GpioError::InvalidPin(pin));
         }
@@ -130,6 +142,8 @@ impl GpioController for Gpio {
     }
 
     fn toggle(&mut self, pin: i32) -> Result<bool, GpioError> {
+        self.is_initialized()?;
+
         if pin < 0 || pin >= 27 {
             return Err(GpioError::Set(pin));
         }
@@ -148,16 +162,21 @@ impl GpioController for Gpio {
         Ok(new_state)
     }
 
-    fn get_pin_status(&self, pin: i32) -> bool {
+    fn get_pin_status(&self, pin: i32) -> Result<bool, GpioError> {
+        self.is_initialized()?;
+
         if pin >= 0 && pin < 27 {
-            self.pin_status[pin as usize]
+            Ok(self.pin_status[pin as usize])
         } else {
-            false
+            Ok(false)
         }
     }
 
-    fn is_initialized(&self) -> bool {
-        return self.initialized;
+    fn is_initialized(&self) -> Result<bool, GpioError> {
+        if !self.initialized {
+            return Err(GpioError::NotInitialized);
+        }
+        Ok(true)
     }
 }
 
