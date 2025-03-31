@@ -31,7 +31,9 @@ extern int set_gpio_inp(int gpio_pin) {
         return -1;
     }
 
-    return *(gpio + ((gpio_pin) / 10)) &= ~(7 << ((gpio_pin) % 10) * 3);
+    *(gpio + ((gpio_pin) / 10)) &= ~(7 << ((gpio_pin) % 10) * 3);
+
+    return 0;
 }
 
 // Sets GPIO pin to Output
@@ -46,7 +48,10 @@ extern int set_gpio_out(int gpio_pin) {
         printf("error: failed to set_gpio_inp before set_gpio_out\n");
         return -1;
     }
-    return *(gpio + ((gpio_pin) / 10)) |= (1 << (((gpio_pin) % 10) * 3));
+
+    *(gpio + ((gpio_pin) / 10)) |= (1 << (((gpio_pin) % 10) * 3));
+
+    return 0;
 }
 
 // Clear gpio
