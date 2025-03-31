@@ -3,49 +3,26 @@ mod errors;
 mod logger;
 
 use axum::{
-    extract::{
-        Path,
-        State,
-    },
+    extract::{Path, State},
     http::header,
-    response::{
-        Html,
-        IntoResponse,
-    },
-    routing::{
-        delete,
-        get,
-        post,
-    },
-    Form,
-    Router,
+    response::{Html, IntoResponse},
+    routing::{delete, get, post},
+    Form, Router,
 };
-use bindings::{
-    Gpio,
-    GpioController,
-};
-use fastwebsockets::{
-    upgrade,
-    OpCode,
-    WebSocketError,
-};
+use bindings::{Gpio, GpioWrapper};
+use fastwebsockets::{upgrade, OpCode, WebSocketError};
 use listenfd::ListenFd;
 use serde::Deserialize;
 //use logger::LogType;
 use std::{
     env,
     error::Error,
+    fmt::{format, Display},
     net::SocketAddr,
-    sync::{
-        Arc,
-        Mutex,
-    },
-    time::{
-        SystemTime,
-        UNIX_EPOCH,
-    },
+    sync::{Arc, Mutex},
+    time::{Duration, SystemTime, UNIX_EPOCH},
 };
-use tokio::net::TcpListener;
+use tokio::{net::TcpListener, time::sleep};
 
 #[derive(Clone)]
 enum Action {
@@ -53,6 +30,17 @@ enum Action {
     SetLow(i32),
     Delay(i32),
     WaitFor(i32),
+}
+
+impl Display for Action {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Action::SetHigh(pin) => write!(f, "SETHIGH{pin}"),
+            Action::SetLow(pin) => write!(f, "SETLOW{pin}"),
+            Action::Delay(time) => write!(f, "DELAY{time}"),
+            Action::WaitFor(pin) => write!(f, "WAITFOR{pin}"),
+        }
+    }
 }
 
 #[derive(Deserialize)]
@@ -64,7 +52,7 @@ struct ActionForm {
 #[derive(Clone)]
 struct AppState {
     gpio: Arc<Mutex<Gpio>>,
-    actions: Vec<Action>,
+    actions: Arc<Mutex<Vec<Action>>>,
 }
 
 #[tokio::main]
@@ -77,7 +65,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
 
     let appstate = AppState {
         gpio: Arc::new(Mutex::new(Gpio::new())),
-        actions: Vec::new(),
+        actions: Arc::new(Mutex::new(Vec::new())),
     };
 
     let app = Router::new()
@@ -91,6 +79,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
         .route("/{pin}", get(toggle))
         .route("/add-action", post(add_action))
         .route("/delete-action/{index}", delete(delete_action))
+        .route("/start-actions", post(start_actions))
         .with_state(appstate);
 
     let mut listenfd = ListenFd::from_env();
@@ -119,12 +108,49 @@ async fn main() -> Result<(), Box<dyn Error>> {
     Ok(())
 }
 
+async fn start_actions(State(appstate): State<AppState>) {
+    println!("starting actions...");
+    let actions = appstate.actions.lock().unwrap().clone();
+    for i in actions.iter() {
+        println!("{i}");
+        // FUCK ERROR HANDLING UNWRAPPP EVERYTHHHINNG
+        let _ = match i {
+            Action::SetHigh(pin) => {
+                let mut gpio = appstate.gpio.lock().unwrap();
+                gpio.set_as_output(*pin).unwrap();
+                gpio.set_high(*pin).unwrap();
+                println!("set high: GPIO {pin}");
+            }
+            Action::SetLow(pin) => {
+                let mut gpio = appstate.gpio.lock().unwrap();
+                gpio.set_as_output(*pin).unwrap();
+                gpio.set_low(*pin).unwrap();
+                println!("set low: GPIO {pin}");
+            }
+            Action::Delay(time) => sleep(Duration::from_millis(*time as u64)).await,
+            Action::WaitFor(pin) => loop {
+                let mut gpio = appstate.gpio.lock().unwrap();
+                gpio.set_as_input(*pin).unwrap();
+                if gpio.get_gpio(*pin).unwrap() {
+                    println!("got signal: GPIO {pin}");
+                    break;
+                }
+                drop(gpio);
+            },
+        };
+    }
+}
+
 async fn delete_action(State(appstate): State<AppState>, Path(index): Path<usize>) {
-    println!("boom")
+    let mut actions = appstate.actions.lock().unwrap();
+    if index < actions.len() {
+        actions.remove(index);
+    }
+    println!("deleting action");
 }
 
 async fn add_action(
-    State(mut appstate): State<AppState>,
+    State(appstate): State<AppState>,
     Form(input): Form<ActionForm>,
 ) -> Html<String> {
     let (action, display_text) = match input.action_type.as_str() {
@@ -147,7 +173,11 @@ async fn add_action(
         _ => return Html(format!("put this in a log somewhere")),
     };
 
-    appstate.actions.push(action);
+    let mut actions = appstate.actions.lock().unwrap();
+    actions.push(action.clone());
+
+    let index = actions.len() - 1;
+    drop(actions);
 
     Html(format!(
         r#"<div class="pin-item" 
@@ -157,8 +187,7 @@ async fn add_action(
             <span class="pin-number">{}</span>
             <span class="pin-delete">DELETE</span>
         </div>"#,
-        appstate.actions.len() - 1,
-        display_text
+        index, display_text
     ))
 }
 

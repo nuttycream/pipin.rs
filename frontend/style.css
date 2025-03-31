@@ -12,6 +12,10 @@ button {
     font-family: inherit;
 }
 
+h2 {
+    text-align: center;
+}
+
 .main-layout {
     display: flex;
     gap: 10px;
@@ -36,7 +40,7 @@ button {
 
 .controls-container {
     display: flex;
-    gap: 15px;
+    gap: 10px;
     flex: 1;
     margin-bottom: 15px;
 }
@@ -45,7 +49,7 @@ button {
     flex: 1;
     border: 1px solid gray;
     border-radius: 10px;
-    padding: 15px;
+    padding: 10px;
     background-color: black;
     overflow: auto;
 }
@@ -54,11 +58,10 @@ button {
     flex: 1;
     border: 1px solid gray;
     border-radius: 10px;
-    padding: 15px;
+    padding: 10px;
     background-color: black;
     display: flex;
     flex-direction: column;
-    gap: 10px;
 }
 
 .log-box {
@@ -72,12 +75,14 @@ button {
 
 .controls {
     display: flex;
+    justify-content: center;
     gap: 10px;
     margin-bottom: 20px;
 }
 
 .control-btn {
     padding: 10px 15px;
+    width: 100px;
     border: none;
     border-radius: 5px;
     background-color: green;
@@ -179,9 +184,64 @@ button {
 .action-options {
     display: flex;
     gap: 10px;
-    align-items: center;
-    width: 100%;
-    box-sizing: border-box;
+}
+
+.queue-actions {
+    display: flex;
+    flex-direction: row;
+    margin-top: 10px;
+    gap: 10px;
+}
+
+.queue-start {
+    flex: 1;
+    padding: 5px;
+    border: none;
+    border-radius: 5px;
+    background-color: green;
+    color: white;
+    cursor: pointer;
+    font-size: 12px;
+}
+
+.queue-stop {
+    flex: 1;
+    padding: 5px;
+    border: none;
+    border-radius: 5px;
+    background-color: red;
+    color: white;
+    cursor: pointer;
+    font-size: 12px;
+}
+
+.queue-loop {
+    flex: 1;
+    padding: 5px;
+    border: none;
+    border-radius: 5px;
+    background-color: blue;
+    color: white;
+    cursor: pointer;
+    font-size: 12px;
+}
+
+.queue-start:hover {
+    background-color: darkgreen;
+}
+
+.queue-stop:hover {
+    background-color: darkred;
+}
+
+.queue-loop:hover {
+    background-color: darkblue;
+}
+
+.active-pins {
+    flex: 1;
+    max-height: 500px;
+    overflow: auto;
 }
 
 .pin-item {

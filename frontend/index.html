@@ -8,30 +8,12 @@
         <script src="./htmx.min.js"></script>
     </head>
     <body hx-ext="ws">
-        <div class="controls">
-            <h1>pipin.rs</h1>
-            <button hx-get="/setup" 
-                hx-target="#log-container"
-                hx-swap="afterbegin"
-                type="button" id="setup" class="control-btn">
-                Setup
-            </button>
-            <button hx-get="/reset" 
-                hx-target="#log-container"
-                hx-swap="afterbegin"
-                type="button" id="reset" class="control-btn">
-                Reset
-            </button>
-            <button hx-get="/terminate" 
-                hx-target="#log-container"
-                hx-swap="afterbegin"
-                type="button" id="terminate" class="control-btn">
-                Terminate
-            </button>
-        </div>
+        
+        <h1>pipin.rs</h1>
         
         <div class="main-layout">
             <div class="gpio-section">
+                <h2>GPIO Pins</h2>
                 <div class="gpio-layout">
                     <div class="gpio-row">
                         <button class="pin power" disabled>3.3V</button>
@@ -119,7 +101,41 @@
             <div class="controls-section">
                 <div class="controls-container">
                     <div class="options">
+
+                        <h2>Info</h2>
+                        <div class="controls">
+                            <button hx-get="/setup" 
+                                hx-target="#log-container"
+                                hx-swap="afterbegin"
+                                type="button" id="setup" class="control-btn">
+                                Setup
+                            </button>
+                            <button hx-get="/reset" 
+                                hx-target="#log-container"
+                                hx-swap="afterbegin"
+                                type="button" id="reset" class="control-btn">
+                                Reset
+                            </button>
+                            <button hx-get="/terminate" 
+                                hx-target="#log-container"
+                                hx-swap="afterbegin"
+                                type="button" id="terminate" class="control-btn">
+                                Terminate
+                            </button>
+                        </div>
+                        <span>Hardware...</span>
+                        <span>GPIO Status...</span>
+                        <span>Last Request Speed...</span>
+                        <span>Config...</span>
+
+                        
                         <h2>Options</h2>
+                        <div class="action-options">
+                            <select name="action_type" id="actions" class="action-select">
+                                <option value="">Raspberry Pi 2+</option>
+                                <option value="">Raspberry Pi 3, 4, 5</option>
+                            </select>
+                        </div>
                     </div>
 
                     <div class="queue-list">
@@ -132,15 +148,23 @@
                                 <select name="action_type" id="actions" class="action-select">
                                     <option value="set-low">Set Low</option>
                                     <option value="set-high">Set High</option>
-                                    <option value="delay">Delay</option>
+                                    <option value="delay">Delay(ms)</option>
                                     <option value="wait-for">Wait For</option>
                                 </select>
                                 <input type="number" name="value" value="50" class="action-input">
                             </div>
                             <button type="submit" class="action-btn">Add To Queue</button>
                         </form>
+                        <div class="queue-actions">
+                            <button 
+                                hx-post="/start-actions"
+                                hx-swap="none"
+                                class="queue-start">Start</button>
+                            <button class="queue-stop">Stop</button>
+                            <button class="queue-loop">Loop</button>
+                        </div>
                         <br>
-                        <div id="active-pins">
+                        <div id="active-pins" class="active-pins">
                         </div>
                     </div>
                 </div>
