@@ -1,7 +1,4 @@
-use std::{
-    error::Error,
-    fmt,
-};
+use std::{error::Error, fmt};
 
 #[derive(Debug)]
 pub enum GpioError {
@@ -12,6 +9,7 @@ pub enum GpioError {
     Terminate,
     Device,
     NotInitialized,
+    Clear(i32),
 }
 
 impl GpioError {}
@@ -27,6 +25,7 @@ impl fmt::Display for GpioError {
             GpioError::Device => write!(f, "Failed to switch device"),
             GpioError::InvalidPin(pin) => write!(f, "Invalid gpio pin {}", pin),
             GpioError::NotInitialized => write!(f, "GPIO Not Initialized"),
+            GpioError::Clear(pin) => write!(f, "Failed to clear GPIO {}", pin),
         }
     }
 }
