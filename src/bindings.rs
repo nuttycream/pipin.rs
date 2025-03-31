@@ -186,6 +186,7 @@ impl GpioWrapper for Gpio {
         self.is_initialized()?;
 
         if pin >= 0 && pin < 27 {
+            self.set_as_input(pin)?;
             unsafe {
                 if get_gpio(pin) == 0 {
                     return Ok(true);

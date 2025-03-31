@@ -17,7 +17,7 @@ use serde::Deserialize;
 use std::{
     env,
     error::Error,
-    fmt::{format, Display},
+    fmt::Display,
     net::SocketAddr,
     sync::{Arc, Mutex},
     time::{Duration, SystemTime, UNIX_EPOCH},
@@ -130,7 +130,6 @@ async fn start_actions(State(appstate): State<AppState>) {
             Action::Delay(time) => sleep(Duration::from_millis(*time as u64)).await,
             Action::WaitFor(pin) => loop {
                 let mut gpio = appstate.gpio.lock().unwrap();
-                gpio.set_as_input(*pin).unwrap();
                 if gpio.get_gpio(*pin).unwrap() {
                     println!("got signal: GPIO {pin}");
                     break;
