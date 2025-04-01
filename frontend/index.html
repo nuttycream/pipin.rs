@@ -125,7 +125,7 @@
                         </div>
                         <span>Hardware...</span>
                         <span>GPIO Status...</span>
-                        <span>Last Request Speed...</span>
+                        <span>Request Latency...</span>
                         <span>Config...</span>
 
                         
@@ -177,16 +177,15 @@
         document.addEventListener('DOMContentLoaded', function() {
             const gpioButtons = document.querySelectorAll('.pin.gpio');
 
-        gpioButtons.forEach(button => {
-        const pinNumber = button.getAttribute('data-pin');
+            gpioButtons.forEach(button => {
+                const pinNumber = button.getAttribute('data-pin');
 
-        button.setAttribute('hx-get', `/${pinNumber}`);
-        button.setAttribute('hx-target', '#log-container');
-        button.setAttribute('hx-swap', 'afterbegin');
-        });
+                button.setAttribute('hx-get', `/${pinNumber}`);
+                button.setAttribute('hx-target', '#log-container');
+                button.setAttribute('hx-swap', 'afterbegin');
+            });
 
-        window.htmx.process(document.body);
-
+            window.htmx.process(document.body);
         });
         </script>
     </body>
