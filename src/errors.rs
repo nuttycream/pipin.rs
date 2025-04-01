@@ -12,7 +12,6 @@ pub enum GpioError {
     Clear(i32),
 }
 
-impl GpioError {}
 impl Error for GpioError {}
 
 impl fmt::Display for GpioError {

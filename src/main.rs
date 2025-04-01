@@ -53,6 +53,7 @@ struct ActionForm {
 struct AppState {
     gpio: Arc<Mutex<Gpio>>,
     actions: Arc<Mutex<Vec<Action>>>,
+    do_actions: Arc<Mutex<bool>>,
 }
 
 #[tokio::main]
@@ -66,6 +67,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
     let appstate = AppState {
         gpio: Arc::new(Mutex::new(Gpio::new())),
         actions: Arc::new(Mutex::new(Vec::new())),
+        do_actions: Arc::new(Mutex::new(false)),
     };
 
     let app = Router::new()
@@ -80,6 +82,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
         .route("/add-action", post(add_action))
         .route("/delete-action/{index}", delete(delete_action))
         .route("/start-actions", post(start_actions))
+        .route("/stop-actions", post(stop_actions))
         .with_state(appstate);
 
     let mut listenfd = ListenFd::from_env();
@@ -106,6 +109,12 @@ async fn main() -> Result<(), Box<dyn Error>> {
     .await?;
 
     Ok(())
+}
+
+async fn stop_actions(State(appstate): State<AppState>) {
+    println!("attempting to stop");
+    // oh my god i think i have to use channels....
+    // https://stackoverflow.com/a/26200583/17123405
 }
 
 async fn start_actions(State(appstate): State<AppState>) {

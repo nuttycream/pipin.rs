@@ -65,7 +65,7 @@ impl GpioWrapper for Gpio {
 
         for pin in 0..27 {
             if self.pin_status[pin as usize] {
-                self.set_low(pin)?;
+                self.clear_gpio(pin)?;
             }
         }
 
