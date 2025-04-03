@@ -2,10 +2,11 @@ mod bindings;
 mod errors;
 mod logger;
 
+use axum::response::IntoResponse;
 use axum::{
     extract::{Path, State},
     http::header,
-    response::{Html, IntoResponse},
+    response::Html,
     routing::{delete, get, post},
     Form, Router,
 };
@@ -19,7 +20,7 @@ use std::{
     error::Error,
     fmt::Display,
     net::SocketAddr,
-    sync::{Arc, Mutex},
+    sync::{atomic::AtomicBool, Arc, Mutex},
     time::{Duration, SystemTime, UNIX_EPOCH},
 };
 use tokio::{net::TcpListener, time::sleep};
@@ -53,7 +54,7 @@ struct ActionForm {
 struct AppState {
     gpio: Arc<Mutex<Gpio>>,
     actions: Arc<Mutex<Vec<Action>>>,
-    do_actions: Arc<Mutex<bool>>,
+    stop_it: Arc<AtomicBool>,
 }
 
 #[tokio::main]
@@ -67,7 +68,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
     let appstate = AppState {
         gpio: Arc::new(Mutex::new(Gpio::new())),
         actions: Arc::new(Mutex::new(Vec::new())),
-        do_actions: Arc::new(Mutex::new(false)),
+        stop_it: Arc::new(AtomicBool::new(false)),
     };
 
     let app = Router::new()
@@ -113,16 +114,28 @@ async fn main() -> Result<(), Box<dyn Error>> {
 
 async fn stop_actions(State(appstate): State<AppState>) {
     println!("attempting to stop");
-    // oh my god i think i have to use channels....
-    // https://stackoverflow.com/a/26200583/17123405
+    appstate
+        .stop_it
+        .store(true, std::sync::atomic::Ordering::Relaxed);
 }
 
 async fn start_actions(State(appstate): State<AppState>) {
     println!("starting actions...");
     let actions = appstate.actions.lock().unwrap().clone();
+    let stop = appstate.stop_it.clone();
     for i in actions.iter() {
         println!("{i}");
-        // FUCK ERROR HANDLING UNWRAPPP EVERYTHHHINNG
+        if stop.load(std::sync::atomic::Ordering::Relaxed) {
+            println!("found a stop action");
+
+            appstate
+                .stop_it
+                .store(false, std::sync::atomic::Ordering::Relaxed);
+
+            break;
+        }
+
+        // FUCK ALAT UNWRAPPP EVERYTHHHINNG
         let _ = match i {
             Action::SetHigh(pin) => {
                 let mut gpio = appstate.gpio.lock().unwrap();
@@ -162,6 +175,8 @@ async fn add_action(
     Form(input): Form<ActionForm>,
 ) -> Html<String> {
     let (action, display_text) = match input.action_type.as_str() {
+        // add bounds for adding actions
+        // gpio pins should be between 0-27.
         "set-high" => (
             Action::SetHigh(input.value),
             format!("GPIO:{} Set High", input.value),
