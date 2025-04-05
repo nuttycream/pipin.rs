@@ -506,6 +506,7 @@ dependencies = [
  "fastwebsockets",
  "listenfd",
  "serde",
+ "serde_json",
  "tokio",
 ]
 
