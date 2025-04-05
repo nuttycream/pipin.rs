@@ -1,195 +1,213 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-    <head>
-        <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1">
-        <title>pipin.rs</title>
-        <link href="style.css" rel="stylesheet">
-        <script src="./htmx.min.js"></script>
-    </head>
-    <body hx-ext="ws">
-        
-        <h1>pipin.rs</h1>
-        
-        <div class="main-layout">
-            <div class="gpio-section">
-                <h2>GPIO Pins</h2>
-                <div class="gpio-layout">
-                    <div class="gpio-row">
-                        <button class="pin power" disabled>3.3V</button>
-                        <button class="pin power" disabled>5V</button>
-                    </div>
-                    <div class="gpio-row">
-                        <button class="pin gpio" data-pin="2">GPIO 2</button>
-                        <button class="pin power" disabled>5V</button>
-                    </div>
-                    <div class="gpio-row">
-                        <button class="pin gpio" data-pin="3">GPIO 3</button>
-                        <button class="pin ground" disabled>GND</button>
-                    </div>
-                    <div class="gpio-row">
-                        <button class="pin gpio" data-pin="4">GPIO 4</button>
-                        <button class="pin gpio" data-pin="14">GPIO 14</button>
-                    </div>
-                    <div class="gpio-row">
-                        <button class="pin ground" disabled>GND</button>
-                        <button class="pin gpio" data-pin="15">GPIO 15</button>
-                    </div>
-                    <div class="gpio-row">
-                        <button class="pin gpio" data-pin="17">GPIO 17</button>
-                        <button class="pin gpio" data-pin="18">GPIO 18</button>
-                    </div>
-                    <div class="gpio-row">
-                        <button class="pin gpio" data-pin="27">GPIO 27</button>
-                        <button class="pin ground" disabled>GND</button>
-                    </div>
-                    <div class="gpio-row">
-                        <button class="pin gpio" data-pin="22">GPIO 22</button>
-                        <button class="pin gpio" data-pin="23">GPIO 23</button>
-                    </div>
-                    <div class="gpio-row">
-                        <button class="pin power" disabled>3.3V</button>
-                        <button class="pin gpio" data-pin="24">GPIO 24</button>
-                    </div>
-                    <div class="gpio-row">
-                        <button class="pin gpio" data-pin="10">GPIO 10</button>
-                        <button class="pin ground" disabled>GND</button>
-                    </div>
-                    <div class="gpio-row">
-                        <button class="pin gpio" data-pin="9">GPIO 9</button>
-                        <button class="pin gpio" data-pin="25">GPIO 25</button>
-                    </div>
-                    <div class="gpio-row">
-                        <button class="pin gpio" data-pin="11">GPIO 11</button>
-                        <button class="pin gpio" data-pin="8">GPIO 8</button>
-                    </div>
-                    <div class="gpio-row">
-                        <button class="pin ground" disabled>GND</button>
-                        <button class="pin gpio" data-pin="7">GPIO 7</button>
-                    </div>
-                    <div class="gpio-row">
-                        <button class="pin gpio" data-pin="0">GPIO 0</button>
-                        <button class="pin gpio" data-pin="1">GPIO 1</button>
-                    </div>
-                    <div class="gpio-row">
-                        <button class="pin gpio" data-pin="5">GPIO 5</button>
-                        <button class="pin ground" disabled>GND</button>
-                    </div>
-                    <div class="gpio-row">
-                        <button class="pin gpio" data-pin="6">GPIO 6</button>
-                        <button class="pin gpio" data-pin="12">GPIO 12</button>
-                    </div>
-                    <div class="gpio-row">
-                        <button class="pin gpio" data-pin="13">GPIO 13</button>
-                        <button class="pin ground" disabled>GND</button>
-                    </div>
-                    <div class="gpio-row">
-                        <button class="pin gpio" data-pin="19">GPIO 19</button>
-                        <button class="pin gpio" data-pin="16">GPIO 16</button>
-                    </div>
-                    <div class="gpio-row">
-                        <button class="pin gpio" data-pin="26">GPIO 26</button>
-                        <button class="pin gpio" data-pin="20">GPIO 20</button>
-                    </div>
-                    <div class="gpio-row">
-                        <button class="pin ground" disabled>GND</button>
-                        <button class="pin gpio" data-pin="21">GPIO 21</button>
-                    </div>
-                </div>
-            </div>
-            
-            <div class="controls-section">
-                <div class="controls-container">
-                    <div class="options">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>pipin.rs</title>
+    <link href="style.css" rel="stylesheet" />
+    <script src="./htmx.min.js"></script>
+  </head>
+  <body hx-ext="ws">
+    <h1>pipin.rs</h1>
 
-                        <h2>Info</h2>
-                        <div class="controls">
-                            <button hx-get="/setup" 
-                                hx-target="#log-container"
-                                hx-swap="afterbegin"
-                                type="button" id="setup" class="control-btn">
-                                Setup
-                            </button>
-                            <button hx-get="/reset" 
-                                hx-target="#log-container"
-                                hx-swap="afterbegin"
-                                type="button" id="reset" class="control-btn">
-                                Reset
-                            </button>
-                            <button hx-get="/terminate" 
-                                hx-target="#log-container"
-                                hx-swap="afterbegin"
-                                type="button" id="terminate" class="control-btn">
-                                Terminate
-                            </button>
-                        </div>
-                        <span>Hardware...</span>
-                        <span>GPIO Status...</span>
-                        <span>Request Latency...</span>
-                        <span>Config...</span>
-
-                        
-                        <h2>Options</h2>
-                        <div class="action-options">
-                            <select name="action_type" id="actions" class="action-select">
-                                <option value="">Raspberry Pi 2+</option>
-                                <option value="">Raspberry Pi 3, 4, 5</option>
-                            </select>
-                        </div>
-                    </div>
-
-                    <div class="queue-list">
-                        <h2>Queue</h2>
-                        <form hx-post="/add-action" 
-                            hx-target="#active-pins"
-                            hx-swap="beforeend"
-                            class="action-form">
-                            <div class="action-options">
-                                <select name="action_type" id="actions" class="action-select">
-                                    <option value="set-low">Set Low</option>
-                                    <option value="set-high">Set High</option>
-                                    <option value="delay">Delay(ms)</option>
-                                    <option value="wait-for">Wait For</option>
-                                </select>
-                                <input type="number" name="value" value="50" class="action-input">
-                            </div>
-                            <button type="submit" class="action-btn">Add To Queue</button>
-                        </form>
-                        <div class="queue-actions">
-                            <button 
-                                hx-post="/start-actions"
-                                hx-swap="none"
-                                class="queue-start">Start</button>
-                            <button 
-                                hx-post="/stop-actions"
-                                hx-swap="none"
-                                class="queue-stop">Stop</button>
-                            <button class="queue-loop">Loop</button>
-                        </div>
-                        <br>
-                        <div id="active-pins" class="active-pins">
-                        </div>
-                    </div>
-                </div>
-                
-                <div class="log-box" id="log-container">
-                </div>
-            </div>
+    <div class="main-layout">
+      <div class="gpio-section">
+        <h2>GPIO Pins</h2>
+        <div class="gpio-layout">
+          <div class="gpio-row">
+            <button class="pin power" disabled>3.3V</button>
+            <button class="pin power" disabled>5V</button>
+          </div>
+          <div class="gpio-row">
+            <button class="pin gpio" data-pin="2">GPIO 2</button>
+            <button class="pin power" disabled>5V</button>
+          </div>
+          <div class="gpio-row">
+            <button class="pin gpio" data-pin="3">GPIO 3</button>
+            <button class="pin ground" disabled>GND</button>
+          </div>
+          <div class="gpio-row">
+            <button class="pin gpio" data-pin="4">GPIO 4</button>
+            <button class="pin gpio" data-pin="14">GPIO 14</button>
+          </div>
+          <div class="gpio-row">
+            <button class="pin ground" disabled>GND</button>
+            <button class="pin gpio" data-pin="15">GPIO 15</button>
+          </div>
+          <div class="gpio-row">
+            <button class="pin gpio" data-pin="17">GPIO 17</button>
+            <button class="pin gpio" data-pin="18">GPIO 18</button>
+          </div>
+          <div class="gpio-row">
+            <button class="pin gpio" data-pin="27">GPIO 27</button>
+            <button class="pin ground" disabled>GND</button>
+          </div>
+          <div class="gpio-row">
+            <button class="pin gpio" data-pin="22">GPIO 22</button>
+            <button class="pin gpio" data-pin="23">GPIO 23</button>
+          </div>
+          <div class="gpio-row">
+            <button class="pin power" disabled>3.3V</button>
+            <button class="pin gpio" data-pin="24">GPIO 24</button>
+          </div>
+          <div class="gpio-row">
+            <button class="pin gpio" data-pin="10">GPIO 10</button>
+            <button class="pin ground" disabled>GND</button>
+          </div>
+          <div class="gpio-row">
+            <button class="pin gpio" data-pin="9">GPIO 9</button>
+            <button class="pin gpio" data-pin="25">GPIO 25</button>
+          </div>
+          <div class="gpio-row">
+            <button class="pin gpio" data-pin="11">GPIO 11</button>
+            <button class="pin gpio" data-pin="8">GPIO 8</button>
+          </div>
+          <div class="gpio-row">
+            <button class="pin ground" disabled>GND</button>
+            <button class="pin gpio" data-pin="7">GPIO 7</button>
+          </div>
+          <div class="gpio-row">
+            <button class="pin gpio" data-pin="0">GPIO 0</button>
+            <button class="pin gpio" data-pin="1">GPIO 1</button>
+          </div>
+          <div class="gpio-row">
+            <button class="pin gpio" data-pin="5">GPIO 5</button>
+            <button class="pin ground" disabled>GND</button>
+          </div>
+          <div class="gpio-row">
+            <button class="pin gpio" data-pin="6">GPIO 6</button>
+            <button class="pin gpio" data-pin="12">GPIO 12</button>
+          </div>
+          <div class="gpio-row">
+            <button class="pin gpio" data-pin="13">GPIO 13</button>
+            <button class="pin ground" disabled>GND</button>
+          </div>
+          <div class="gpio-row">
+            <button class="pin gpio" data-pin="19">GPIO 19</button>
+            <button class="pin gpio" data-pin="16">GPIO 16</button>
+          </div>
+          <div class="gpio-row">
+            <button class="pin gpio" data-pin="26">GPIO 26</button>
+            <button class="pin gpio" data-pin="20">GPIO 20</button>
+          </div>
+          <div class="gpio-row">
+            <button class="pin ground" disabled>GND</button>
+            <button class="pin gpio" data-pin="21">GPIO 21</button>
+          </div>
         </div>
-        <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            const gpioButtons = document.querySelectorAll('.pin.gpio');
+      </div>
 
-            gpioButtons.forEach(button => {
-                const pinNumber = button.getAttribute('data-pin');
+      <div class="controls-section">
+        <div class="controls-container">
+          <div class="options">
+            <h2>Info</h2>
+            <div class="controls">
+              <button
+                hx-get="/setup"
+                hx-target="#log-container"
+                hx-swap="afterbegin"
+                type="button"
+                id="setup"
+                class="control-btn"
+              >
+                Setup
+              </button>
+              <button
+                hx-get="/reset"
+                hx-target="#log-container"
+                hx-swap="afterbegin"
+                type="button"
+                id="reset"
+                class="control-btn"
+              >
+                Reset
+              </button>
+              <button
+                hx-get="/terminate"
+                hx-target="#log-container"
+                hx-swap="afterbegin"
+                type="button"
+                id="terminate"
+                class="control-btn"
+              >
+                Terminate
+              </button>
+            </div>
+            <span>Hardware...</span>
+            <span>GPIO Status...</span>
+            <span>Request Latency...</span>
+            <span>Config...</span>
 
-                button.setAttribute('hx-get', `/${pinNumber}`);
-                button.setAttribute('hx-target', '#log-container');
-                button.setAttribute('hx-swap', 'afterbegin');
-            });
+            <h2>Options</h2>
+            <div class="action-options">
+              <select name="action_type" id="actions" class="action-select">
+                <option value="">Raspberry Pi 2+</option>
+                <option value="">Raspberry Pi 3, 4, 5</option>
+              </select>
+            </div>
+          </div>
 
-            window.htmx.process(document.body);
+          <div class="queue-list">
+            <h2>Queue</h2>
+            <form
+              hx-post="/add-action"
+              hx-target="#active-pins"
+              hx-swap="beforeend"
+              class="action-form"
+            >
+              <div class="action-options">
+                <select name="action_type" id="actions" class="action-select">
+                  <option value="set-low">Set Low</option>
+                  <option value="set-high">Set High</option>
+                  <option value="delay">Delay(ms)</option>
+                  <option value="wait-for">Wait For</option>
+                </select>
+                <input
+                  type="number"
+                  name="value"
+                  value="50"
+                  class="action-input"
+                />
+              </div>
+              <button type="submit" class="action-btn">Add To Queue</button>
+            </form>
+            <div class="queue-actions">
+              <div>
+                <button
+                  hx-post="/start-actions"
+                  hx-swap="none"
+                  class="queue-start"
+                >
+                  Start
+                </button>
+                <input type="" name="" value="" />
+              </div>
+              <button hx-post="/stop-actions" hx-swap="none" class="queue-stop">
+                Stop
+              </button>
+            </div>
+            <br />
+            <div id="active-pins" class="active-pins"></div>
+          </div>
+        </div>
+
+        <div class="log-box" id="log-container"></div>
+      </div>
+    </div>
+    <script>
+      document.addEventListener("DOMContentLoaded", function () {
+        const gpioButtons = document.querySelectorAll(".pin.gpio");
+
+        gpioButtons.forEach((button) => {
+          const pinNumber = button.getAttribute("data-pin");
+
+          button.setAttribute("hx-get", `/${pinNumber}`);
+          button.setAttribute("hx-target", "#log-container");
+          button.setAttribute("hx-swap", "afterbegin");
         });
-        </script>
-    </body>
+
+        window.htmx.process(document.body);
+      });
+    </script>
+  </body>
 </html>
