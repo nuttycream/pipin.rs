@@ -3,7 +3,6 @@ mod errors;
 mod logger;
 
 use axum::response::IntoResponse;
-use axum::routing::options;
 use axum::{
     extract::{Path, State},
     http::header,
@@ -14,8 +13,10 @@ use axum::{
 use bindings::{Gpio, GpioWrapper};
 use fastwebsockets::{upgrade, OpCode, WebSocketError};
 use listenfd::ListenFd;
-use serde::Deserialize;
-//use logger::LogType;
+//use logger::{LogEntry, LogType};
+use serde::{Deserialize, Serialize};
+use std::fmt;
+use std::sync::atomic::Ordering;
 use std::{
     env,
     error::Error,
@@ -26,32 +27,38 @@ use std::{
 };
 use tokio::{net::TcpListener, time::sleep};
 
-#[derive(Clone, Deserialize, Debug)]
+#[derive(Clone, Serialize, Deserialize, Debug)]
 enum Action {
     SetHigh(i32),
     SetLow(i32),
     Delay(i32),
-    WaitFor(i32),
+    WaitForHigh(i32),
+    WaitForLow(i32),
+    SetPullUp(i32),
+    SetPullDown(i32),
 }
 
 impl Display for Action {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             Action::SetHigh(pin) => write!(f, "SETHIGH{pin}"),
             Action::SetLow(pin) => write!(f, "SETLOW{pin}"),
             Action::Delay(time) => write!(f, "DELAY{time}"),
-            Action::WaitFor(pin) => write!(f, "WAITFOR{pin}"),
+            Action::WaitForHigh(pin) => write!(f, "WAITFORHIGH{pin}"),
+            Action::WaitForLow(pin) => write!(f, "WAITFORLOW{pin}"),
+            Action::SetPullUp(pin) => write!(f, "SETPULLUP{pin}"),
+            Action::SetPullDown(pin) => write!(f, "SETPULLDOWN{pin}"),
         }
     }
 }
 
-#[derive(Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug)]
 struct ActionForm {
     action_type: String,
     value: i32,
 }
 
-#[derive(Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug)]
 struct LoopOption {
     should_loop: Option<String>,
 }
@@ -120,9 +127,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
 
 async fn stop_actions(State(appstate): State<AppState>) {
     println!("attempting to stop");
-    appstate
-        .stop_it
-        .store(true, std::sync::atomic::Ordering::Relaxed);
+    appstate.stop_it.store(true, Ordering::Relaxed);
 }
 
 async fn start_actions(State(appstate): State<AppState>, Form(input): Form<LoopOption>) {
@@ -130,7 +135,7 @@ async fn start_actions(State(appstate): State<AppState>, Form(input): Form<LoopO
     let should_loop = input.should_loop.as_deref() == Some("true");
     let stop = appstate.stop_it.clone();
 
-    stop.store(false, std::sync::atomic::Ordering::Relaxed);
+    stop.store(false, Ordering::Relaxed);
 
     loop {
         let actions = appstate.actions.lock().unwrap().clone();
@@ -142,12 +147,11 @@ async fn start_actions(State(appstate): State<AppState>, Form(input): Form<LoopO
 
         for i in actions.iter() {
             println!("{i}");
-            if stop.load(std::sync::atomic::Ordering::Relaxed) {
+            if stop.load(Ordering::Relaxed) {
                 println!("found a stop action");
                 break;
             }
 
-            // FUCK ALAT UNWRAPPP EVERYTHHHINNG
             let _ = match i {
                 Action::SetHigh(pin) => {
                     let mut gpio = appstate.gpio.lock().unwrap();
@@ -162,14 +166,34 @@ async fn start_actions(State(appstate): State<AppState>, Form(input): Form<LoopO
                     println!("set low: GPIO {pin}");
                 }
                 Action::Delay(time) => sleep(Duration::from_millis(*time as u64)).await,
-                Action::WaitFor(pin) => loop {
+                Action::WaitForHigh(pin) => loop {
                     let mut gpio = appstate.gpio.lock().unwrap();
-                    if gpio.get_gpio(*pin).unwrap() {
-                        println!("got signal: GPIO {pin}");
+                    if gpio.get_gpio(*pin).unwrap() == true {
+                        println!("got HIGH signal: GPIO {pin}");
                         break;
                     }
                     drop(gpio);
                 },
+                Action::WaitForLow(pin) => loop {
+                    let mut gpio = appstate.gpio.lock().unwrap();
+                    if gpio.get_gpio(*pin).unwrap() == false {
+                        println!("got LOW signal: GPIO {pin}");
+                        break;
+                    }
+                    drop(gpio);
+                },
+                // gonna use an arbitrary 100 usecond wait_time here
+                // not sure if an option should exist later
+                Action::SetPullUp(pin) => {
+                    let gpio = appstate.gpio.lock().unwrap();
+                    gpio.set_pullup(*pin, 100).unwrap();
+                    println!("set pullup: GPIO {pin}");
+                }
+                Action::SetPullDown(pin) => {
+                    let gpio = appstate.gpio.lock().unwrap();
+                    gpio.set_pulldown(*pin, 100).unwrap();
+                    println!("set pulldown: GPIO {pin}");
+                }
             };
         }
 
@@ -177,7 +201,7 @@ async fn start_actions(State(appstate): State<AppState>, Form(input): Form<LoopO
             break;
         }
 
-        if stop.load(std::sync::atomic::Ordering::Relaxed) {
+        if stop.load(Ordering::Relaxed) {
             println!("stopping here before nexy loop");
             break;
         }
@@ -211,9 +235,21 @@ async fn add_action(
             Action::Delay(input.value),
             format!("Delay {}ms", input.value),
         ),
-        "wait-for" => (
-            Action::WaitFor(input.value),
-            format!("Wait For GPIO:{}", input.value),
+        "wait-for-high" => (
+            Action::WaitForHigh(input.value),
+            format!("Wait For GPIO:{} HIGH", input.value),
+        ),
+        "wait-for-low" => (
+            Action::WaitForLow(input.value),
+            format!("Wait For GPIO:{} LOW", input.value),
+        ),
+        "set-pull-up" => (
+            Action::SetPullUp(input.value),
+            format!("GPIO:{} Pull-Up", input.value),
+        ),
+        "set-pull-down" => (
+            Action::SetPullDown(input.value),
+            format!("GPIO:{} Pull-Down", input.value),
         ),
         _ => return Html(format!("put this in a log somewhere")),
     };
@@ -312,6 +348,7 @@ async fn setup(State(appstate): State<AppState>) -> impl IntoResponse {
 
 async fn reset(State(appstate): State<AppState>) -> impl IntoResponse {
     let mut gpio = appstate.gpio.lock().unwrap();
+
     let res: String = match gpio.reset() {
         Ok(_) => "GPIO reset".to_string(),
         Err(e) => {

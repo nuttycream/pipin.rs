@@ -10,6 +10,8 @@ unsafe extern "C" {
     fn get_gpio(gpio_pin: c_int) -> c_int;
     fn clear_gpio(gpio_pin: c_int) -> c_int;
     fn toggle_gpio(level: c_int, gpio_pin: c_int) -> c_int;
+    fn set_gpio_pulldown(gpio_pin: c_int, wait_time: c_int) -> c_int;
+    fn set_gpio_pullup(gpio_pin: c_int, wait_time: c_int) -> c_int;
 }
 
 pub struct Gpio {
@@ -31,7 +33,9 @@ pub trait GpioWrapper: Sized {
     fn get_gpio(&mut self, pin: i32) -> Result<bool, GpioError>;
     fn get_pin_status(&self, pin: i32) -> Result<bool, GpioError>;
     fn clear_gpio(&self, pin: i32) -> Result<(), GpioError>;
-    fn is_initialized(&self) -> Result<bool, GpioError>;
+    fn set_pulldown(&self, pin: i32, wait_time: i32) -> Result<(), GpioError>;
+    fn set_pullup(&self, pin: i32, wait_time: i32) -> Result<(), GpioError>;
+    fn validate_inp(&self, pin: i32) -> Result<i32, GpioError>;
 }
 
 impl GpioWrapper for Gpio {
@@ -40,6 +44,18 @@ impl GpioWrapper for Gpio {
             initialized: false,
             pin_status: [false; 27],
         }
+    }
+
+    fn validate_inp(&self, pin: i32) -> Result<i32, GpioError> {
+        if !self.initialized {
+            return Err(GpioError::NotInitialized);
+        }
+
+        if pin < 0 || pin > 27 {
+            return Err(GpioError::InvalidPin(pin));
+        }
+
+        Ok(pin)
     }
 
     fn setup(&mut self) -> Result<(), GpioError> {
@@ -61,7 +77,9 @@ impl GpioWrapper for Gpio {
     }
 
     fn reset(&mut self) -> Result<(), GpioError> {
-        self.is_initialized()?;
+        if self.initialized {
+            return Err(GpioError::NotInitialized);
+        }
 
         for pin in 0..27 {
             if self.pin_status[pin as usize] {
@@ -73,7 +91,9 @@ impl GpioWrapper for Gpio {
     }
 
     fn terminate(&mut self) -> Result<(), GpioError> {
-        self.is_initialized()?;
+        if self.initialized {
+            return Err(GpioError::NotInitialized);
+        }
 
         unsafe {
             if terminate_io() < 0 {
@@ -86,7 +106,9 @@ impl GpioWrapper for Gpio {
     }
 
     fn switch_hardware(&self, option: i32) -> Result<(), GpioError> {
-        self.is_initialized()?;
+        if self.initialized {
+            return Err(GpioError::NotInitialized);
+        }
 
         unsafe {
             if switch_hardware_address(option) < 0 {
@@ -98,11 +120,7 @@ impl GpioWrapper for Gpio {
     }
 
     fn set_as_input(&self, pin: i32) -> Result<(), GpioError> {
-        self.is_initialized()?;
-
-        if pin < 0 || pin > 27 {
-            return Err(GpioError::InvalidPin(pin));
-        }
+        self.validate_inp(pin)?;
 
         unsafe {
             if set_gpio_inp(pin) < 0 {
@@ -113,11 +131,7 @@ impl GpioWrapper for Gpio {
     }
 
     fn set_as_output(&self, pin: i32) -> Result<(), GpioError> {
-        self.is_initialized()?;
-
-        if pin < 0 || pin > 27 {
-            return Err(GpioError::InvalidPin(pin));
-        }
+        self.validate_inp(pin)?;
 
         unsafe {
             if set_gpio_out(pin) < 0 {
@@ -128,11 +142,8 @@ impl GpioWrapper for Gpio {
     }
 
     fn set_high(&mut self, pin: i32) -> Result<(), GpioError> {
-        self.is_initialized()?;
+        self.validate_inp(pin)?;
 
-        if pin < 0 || pin > 27 {
-            return Err(GpioError::InvalidPin(pin));
-        }
         unsafe {
             if toggle_gpio(1, pin) < 0 {
                 return Err(GpioError::Set(pin));
@@ -145,11 +156,8 @@ impl GpioWrapper for Gpio {
     }
 
     fn set_low(&mut self, pin: i32) -> Result<(), GpioError> {
-        self.is_initialized()?;
+        self.validate_inp(pin)?;
 
-        if pin < 0 || pin > 27 {
-            return Err(GpioError::InvalidPin(pin));
-        }
         unsafe {
             if toggle_gpio(0, pin) < 0 {
                 return Err(GpioError::Set(pin));
@@ -162,11 +170,7 @@ impl GpioWrapper for Gpio {
     }
 
     fn toggle(&mut self, pin: i32) -> Result<bool, GpioError> {
-        self.is_initialized()?;
-
-        if pin < 0 || pin > 27 {
-            return Err(GpioError::Set(pin));
-        }
+        self.validate_inp(pin)?;
 
         self.set_as_output(pin)?;
 
@@ -183,53 +187,58 @@ impl GpioWrapper for Gpio {
     }
 
     fn get_gpio(&mut self, pin: i32) -> Result<bool, GpioError> {
-        self.is_initialized()?;
+        self.validate_inp(pin)?;
 
-        if pin >= 0 && pin <= 27 {
-            self.set_as_input(pin)?;
-            unsafe {
-                if get_gpio(pin) == 1 {
-                    return Ok(true);
-                } else {
-                    return Ok(false);
-                }
+        self.set_as_input(pin)?;
+        unsafe {
+            if get_gpio(pin) == 1 {
+                return Ok(true);
+            } else {
+                return Ok(false);
             }
-        } else {
-            return Err(GpioError::InvalidPin(pin));
         }
     }
 
     fn get_pin_status(&self, pin: i32) -> Result<bool, GpioError> {
-        self.is_initialized()?;
+        self.validate_inp(pin)?;
 
-        if pin >= 0 && pin <= 27 {
-            Ok(self.pin_status[pin as usize])
-        } else {
-            return Err(GpioError::InvalidPin(pin));
-        }
+        Ok(self.pin_status[pin as usize])
     }
 
     fn clear_gpio(&self, pin: i32) -> Result<(), GpioError> {
-        self.is_initialized()?;
+        self.validate_inp(pin)?;
 
-        if pin >= 0 && pin <= 27 {
-            unsafe {
-                if clear_gpio(pin) < 0 {
-                    return Err(GpioError::Clear(pin));
-                }
+        unsafe {
+            if clear_gpio(pin) < 0 {
+                return Err(GpioError::Clear(pin));
             }
-        } else {
-            return Err(GpioError::InvalidPin(pin));
         }
 
         Ok(())
     }
 
-    fn is_initialized(&self) -> Result<bool, GpioError> {
-        if !self.initialized {
-            return Err(GpioError::NotInitialized);
+    fn set_pulldown(&self, pin: i32, wait_time: i32) -> Result<(), GpioError> {
+        self.validate_inp(pin)?;
+
+        unsafe {
+            if set_gpio_pulldown(pin, wait_time) < 0 {
+                return Err(GpioError::PullDown(pin));
+            }
         }
-        Ok(true)
+
+        Ok(())
+    }
+
+    fn set_pullup(&self, pin: i32, wait_time: i32) -> Result<(), GpioError> {
+        self.validate_inp(pin)?;
+
+        unsafe {
+            if set_gpio_pullup(pin, wait_time) < 0 {
+                return Err(GpioError::PullUp(pin));
+            }
+        }
+
+        Ok(())
     }
 }
 
