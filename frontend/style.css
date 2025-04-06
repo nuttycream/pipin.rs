@@ -188,42 +188,35 @@ h2 {
 
 .queue-actions {
     display: flex;
-    flex-direction: row;
+    justify-content: space-between;
     margin-top: 10px;
     gap: 10px;
 }
 
-.queue-start {
+.queue-actions form {
+    display: flex;
+    flex-direction: column;
     flex: 1;
-    padding: 5px;
+}
+
+.queue-start, .queue-stop {
+    padding: 8px 12px;
     border: none;
     border-radius: 5px;
-    background-color: green;
     color: white;
     cursor: pointer;
     font-size: 12px;
+    height: 32px;
+}
+
+.queue-start {
+    background-color: green;
+    width: 100%;
 }
 
 .queue-stop {
-    flex: 1;
-    padding: 5px;
-    border: none;
-    border-radius: 5px;
     background-color: red;
-    color: white;
-    cursor: pointer;
-    font-size: 12px;
-}
-
-.queue-loop {
     flex: 1;
-    padding: 5px;
-    border: none;
-    border-radius: 5px;
-    background-color: blue;
-    color: white;
-    cursor: pointer;
-    font-size: 12px;
 }
 
 .queue-start:hover {
@@ -234,8 +227,21 @@ h2 {
     background-color: darkred;
 }
 
-.queue-loop:hover {
-    background-color: darkblue;
+.loop {
+    display: flex;
+    align-items: center;
+    margin-top: 4px;
+}
+
+.loop label {
+    font-size: 12px;
+    color: white;
+}
+
+.loop input[type="checkbox"] {
+    width: 14px;
+    height: 14px;
+    accent-color: #0066ff;
 }
 
 .active-pins {

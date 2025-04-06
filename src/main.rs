@@ -3,6 +3,7 @@ mod errors;
 mod logger;
 
 use axum::response::IntoResponse;
+use axum::routing::options;
 use axum::{
     extract::{Path, State},
     http::header,
@@ -25,7 +26,7 @@ use std::{
 };
 use tokio::{net::TcpListener, time::sleep};
 
-#[derive(Clone)]
+#[derive(Clone, Deserialize, Debug)]
 enum Action {
     SetHigh(i32),
     SetLow(i32),
@@ -44,10 +45,15 @@ impl Display for Action {
     }
 }
 
-#[derive(Deserialize)]
+#[derive(Deserialize, Debug)]
 struct ActionForm {
     action_type: String,
     value: i32,
+}
+
+#[derive(Deserialize, Debug)]
+struct LoopOption {
+    should_loop: Option<String>,
 }
 
 #[derive(Clone)]
@@ -119,46 +125,62 @@ async fn stop_actions(State(appstate): State<AppState>) {
         .store(true, std::sync::atomic::Ordering::Relaxed);
 }
 
-async fn start_actions(State(appstate): State<AppState>) {
+async fn start_actions(State(appstate): State<AppState>, Form(input): Form<LoopOption>) {
     println!("starting actions...");
-    let actions = appstate.actions.lock().unwrap().clone();
+    let should_loop = input.should_loop.as_deref() == Some("true");
     let stop = appstate.stop_it.clone();
-    for i in actions.iter() {
-        println!("{i}");
-        if stop.load(std::sync::atomic::Ordering::Relaxed) {
-            println!("found a stop action");
 
-            appstate
-                .stop_it
-                .store(false, std::sync::atomic::Ordering::Relaxed);
+    stop.store(false, std::sync::atomic::Ordering::Relaxed);
 
+    loop {
+        let actions = appstate.actions.lock().unwrap().clone();
+
+        if actions.is_empty() {
+            println!("actions are empty dawg");
             break;
         }
 
-        // FUCK ALAT UNWRAPPP EVERYTHHHINNG
-        let _ = match i {
-            Action::SetHigh(pin) => {
-                let mut gpio = appstate.gpio.lock().unwrap();
-                gpio.set_as_output(*pin).unwrap();
-                gpio.set_high(*pin).unwrap();
-                println!("set high: GPIO {pin}");
+        for i in actions.iter() {
+            println!("{i}");
+            if stop.load(std::sync::atomic::Ordering::Relaxed) {
+                println!("found a stop action");
+                break;
             }
-            Action::SetLow(pin) => {
-                let mut gpio = appstate.gpio.lock().unwrap();
-                gpio.set_as_output(*pin).unwrap();
-                gpio.set_low(*pin).unwrap();
-                println!("set low: GPIO {pin}");
-            }
-            Action::Delay(time) => sleep(Duration::from_millis(*time as u64)).await,
-            Action::WaitFor(pin) => loop {
-                let mut gpio = appstate.gpio.lock().unwrap();
-                if gpio.get_gpio(*pin).unwrap() {
-                    println!("got signal: GPIO {pin}");
-                    break;
+
+            // FUCK ALAT UNWRAPPP EVERYTHHHINNG
+            let _ = match i {
+                Action::SetHigh(pin) => {
+                    let mut gpio = appstate.gpio.lock().unwrap();
+                    gpio.set_as_output(*pin).unwrap();
+                    gpio.set_high(*pin).unwrap();
+                    println!("set high: GPIO {pin}");
                 }
-                drop(gpio);
-            },
-        };
+                Action::SetLow(pin) => {
+                    let mut gpio = appstate.gpio.lock().unwrap();
+                    gpio.set_as_output(*pin).unwrap();
+                    gpio.set_low(*pin).unwrap();
+                    println!("set low: GPIO {pin}");
+                }
+                Action::Delay(time) => sleep(Duration::from_millis(*time as u64)).await,
+                Action::WaitFor(pin) => loop {
+                    let mut gpio = appstate.gpio.lock().unwrap();
+                    if gpio.get_gpio(*pin).unwrap() {
+                        println!("got signal: GPIO {pin}");
+                        break;
+                    }
+                    drop(gpio);
+                },
+            };
+        }
+
+        if !should_loop {
+            break;
+        }
+
+        if stop.load(std::sync::atomic::Ordering::Relaxed) {
+            println!("stopping here before nexy loop");
+            break;
+        }
     }
 }
 
