@@ -1,11 +1,14 @@
+use axum::response::Html;
 use std::time::{SystemTime, UNIX_EPOCH};
 
+#[derive(Clone)]
 pub enum LogType {
     Info,
     Warning,
     Error,
 }
 
+#[derive(Clone)]
 pub struct LogEntry {
     pub log_type: LogType,
     pub message: String,
@@ -28,5 +31,22 @@ impl LogEntry {
             message,
             time: (hours, minutes, seconds),
         }
+    }
+
+    pub fn to_html(&self) -> Html<String> {
+        let (hours, minutes, seconds) = self.time;
+        let class = match self.log_type {
+            LogType::Info => "log-info",
+            LogType::Warning => "log-warning",
+            LogType::Error => "log-error",
+        };
+
+        Html(format!(
+            r#"<div class="log-entry">
+                <span class="log-time">[{:02}:{:02}:{:02}]</span>
+                <span class="{}">{}</span>
+            </div>"#,
+            hours, minutes, seconds, class, self.message
+        ))
     }
 }
