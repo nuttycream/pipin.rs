@@ -35,10 +35,10 @@ int switch_hardware_address(int option) {
     }
 
     if (option == 0) {
-        printf("switching to bcm2710 %d\n", BCM2710_PERI_BASE);
+        printf("switching to bcm2710 %p\n", (void *)BCM2710_PERI_BASE);
         current_peri_base = BCM2710_PERI_BASE;
     } else {
-        printf("switching to bcm2708 %d\n", BCM2708_PERI_BASE);
+        printf("switching to bcm2708 %p\n", (void *)BCM2708_PERI_BASE);
         current_peri_base = BCM2708_PERI_BASE;
     }
 
@@ -145,7 +145,7 @@ int get_gpio(int gpio_pin) {
 
 // Set up a memory regions to access GPIO
 int setup_gpio() {
-    printf("gpio: setting up with address %d\n", current_peri_base);
+    printf("gpio: setting up with address %p\n", &current_peri_base);
 
     /* open /dev/mem */
     if ((mem_fd = open("/dev/mem", O_RDWR | O_SYNC)) < 0) {
@@ -186,7 +186,7 @@ int set_gpio_pulldown(int gpio_pin, int wait_time) {
         wait_time = 100;
     }
 
-    if (gpio_pin < 0 || gpio_pin > 27) {
+    if (validate_gpio_pin(gpio_pin) < 0) {
         printf("error: invalid gpio pin; between 0-27");
         return -1;
     }
@@ -213,7 +213,11 @@ int set_gpio_pulldown(int gpio_pin, int wait_time) {
 // wait_time in useconds
 int set_gpio_pullup(int gpio_pin, int wait_time) {
 
-    if (gpio_pin < 0 || gpio_pin > 27) {
+    if (wait_time < 0) {
+        wait_time = 100;
+    }
+
+    if (validate_gpio_pin(gpio_pin) < 0) {
         printf("error: invalid gpio pin; between 0-27");
         return -1;
     }
