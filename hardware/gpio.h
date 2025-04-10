@@ -9,10 +9,6 @@
 #define GPIO_HW_OFFSET 0x200000
 extern unsigned int current_peri_base;
 
-// I2C device settings for the sensor
-#define I2C_ADDR 0x29
-#define I2C_DEV_DIR "/dev/i2c-1"
-
 // Memory Mapping
 #define PAGE_SIZE (4 * 1024)
 #define BLOCK_SIZE (4 * 1024)
