@@ -2,8 +2,8 @@ use crate::errors::GpioError;
 use std::os::raw::c_int;
 
 unsafe extern "C" {
-    fn setup_io() -> c_int;
-    fn terminate_io() -> c_int;
+    fn setup_gpio() -> c_int;
+    fn terminate_gpio() -> c_int;
     fn switch_hardware_address(option: c_int) -> c_int;
     fn set_gpio_inp(gpio_pin: c_int) -> c_int;
     fn set_gpio_out(gpio_pin: c_int) -> c_int;
@@ -64,7 +64,7 @@ impl GpioWrapper for Gpio {
         }
 
         unsafe {
-            if setup_io() < 0 {
+            if setup_gpio() < 0 {
                 return Err(GpioError::Setup);
             }
 
@@ -96,7 +96,7 @@ impl GpioWrapper for Gpio {
         }
 
         unsafe {
-            if terminate_io() < 0 {
+            if terminate_gpio() < 0 {
                 return Err(GpioError::Terminate);
             }
         }
@@ -251,7 +251,7 @@ impl Drop for Gpio {
         // means mmap() wasn't executed
         // so do nothing... and drop still
         unsafe {
-            terminate_io();
+            terminate_gpio();
         }
     }
 }
