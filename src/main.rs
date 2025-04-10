@@ -2,30 +2,54 @@ mod bindings;
 mod errors;
 mod logger;
 
-use axum::response::IntoResponse;
 use axum::{
-    extract::{Path, State},
+    extract::{
+        ws::{Message, WebSocket, WebSocketUpgrade},
+        Path, State,
+    },
     http::header,
-    response::Html,
-    routing::{delete, get, post},
+    response::{Html, IntoResponse, Response},
+    routing::{any, delete, get, post},
     Form, Router,
 };
 use bindings::{Gpio, GpioWrapper};
-use fastwebsockets::{upgrade, OpCode, WebSocketError};
+use futures::{SinkExt, StreamExt};
 use listenfd::ListenFd;
-//use logger::{LogEntry, LogType};
+use logger::{LogEntry, LogType};
 use serde::{Deserialize, Serialize};
-use std::fmt;
-use std::sync::atomic::Ordering;
 use std::{
     env,
     error::Error,
-    fmt::Display,
+    fmt::{self, Display},
     net::SocketAddr,
-    sync::{atomic::AtomicBool, Arc, Mutex},
-    time::{Duration, SystemTime, UNIX_EPOCH},
+    sync::{
+        atomic::{AtomicBool, Ordering},
+        Arc, Mutex,
+    },
+    time::Duration,
 };
-use tokio::{net::TcpListener, time::sleep};
+use tokio::{net::TcpListener, sync::broadcast, time::sleep};
+
+fn log_error<E: std::fmt::Display>(appstate: &AppState, error: E) -> Html<String> {
+    let entry = LogEntry::new(LogType::Error, format!("{}", error));
+    let html = entry.to_html();
+    let _ = appstate.log_tx.send(html.0.clone());
+    html
+}
+
+fn log_info(appstate: &AppState, message: impl Into<String>) -> Html<String> {
+    let entry = LogEntry::new(LogType::Info, message.into());
+    let html = entry.to_html();
+    let _ = appstate.log_tx.send(html.0.clone());
+    html
+}
+
+fn log_warning(appstate: &AppState, message: impl Into<String>) -> Html<String> {
+    let entry = LogEntry::new(LogType::Warning, message.into());
+    let html = entry.to_html();
+    let _ = appstate.log_tx.send(html.0.clone());
+    html
+}
 
 #[derive(Clone, Serialize, Deserialize, Debug)]
 enum Action {
@@ -68,6 +92,7 @@ struct AppState {
     gpio: Arc<Mutex<Gpio>>,
     actions: Arc<Mutex<Vec<Action>>>,
     stop_it: Arc<AtomicBool>,
+    log_tx: broadcast::Sender<String>,
 }
 
 #[tokio::main]
@@ -78,17 +103,18 @@ async fn main() -> Result<(), Box<dyn Error>> {
         .unwrap_or(3000);
     let addr = format!("0.0.0.0:{port}");
 
+    let (log_tx, _) = broadcast::channel::<String>(100);
     let appstate = AppState {
         gpio: Arc::new(Mutex::new(Gpio::new())),
         actions: Arc::new(Mutex::new(Vec::new())),
         stop_it: Arc::new(AtomicBool::new(false)),
+        log_tx,
     };
 
     let app = Router::new()
         .route("/", get(serve_html))
         .route("/htmx.min.js", get(serve_js))
         .route("/style.css", get(serve_css))
-        .route("/ws", get(ws_handler))
         .route("/setup", get(setup))
         .route("/reset", get(reset))
         .route("/terminate", get(terminate))
@@ -97,6 +123,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
         .route("/delete-action/{index}", delete(delete_action))
         .route("/start-actions", post(start_actions))
         .route("/stop-actions", post(stop_actions))
+        .route("/ws", any(handle_websocket))
         .with_state(appstate);
 
     let mut listenfd = ListenFd::from_env();
@@ -275,164 +302,96 @@ async fn add_action(
 async fn toggle(State(appstate): State<AppState>, Path(pin): Path<String>) -> impl IntoResponse {
     let mut gpio = appstate.gpio.lock().unwrap();
 
-    // refactor this out bum
-    let now = SystemTime::now()
-        .duration_since(UNIX_EPOCH)
-        .unwrap_or_default()
-        .as_secs();
-    let hours = (now / 3600) % 24;
-    let minutes = (now / 60) % 60;
-    let seconds = now % 60;
-
     let gpio_pin = match pin.parse::<i32>() {
         Ok(num) => num,
         Err(_) => {
-            return Html(format!(
-                r#"<div class="log-entry">
-                    <span class="log-time">[{:02}:{:02}:{:02}]</span>
-                    <span class="log-error">invalid GPIO pin {}</span>
-                </div>"#,
-                hours, minutes, seconds, pin
-            ));
+            return log_error(&appstate, format!("invalid GPIO pin {}", pin));
         }
     };
 
-    let res: String = match gpio.toggle(gpio_pin) {
-        Ok(_) => format!("toggled gpio {}", gpio_pin),
+    match gpio.toggle(gpio_pin) {
+        Ok(_) => log_info(&appstate, format!("toggled gpio {}", gpio_pin)),
         Err(e) => {
             println!("{e}");
-            format!("failed to toggle gpio {e}").to_string()
+            log_error(&appstate, format!("failed to toggle gpio {e}"))
         }
-    };
-
-    let log_entry = format!(
-        r#"<div class="log-entry">
-            <span class="log-time">[{:02}:{:02}:{:02}]</span>
-            <span class="log-info">{}</span>
-        </div>"#,
-        hours, minutes, seconds, res
-    );
-
-    Html(log_entry)
+    }
 }
 
 async fn setup(State(appstate): State<AppState>) -> impl IntoResponse {
     let mut gpio = appstate.gpio.lock().unwrap();
-    let res: String = match gpio.setup() {
-        Ok(_) => "GPIO initialized".to_string(),
+
+    match gpio.setup() {
+        Ok(_) => log_info(&appstate, "GPIO initialized"),
         Err(e) => {
             println!("{e}");
-            format!("failed to initialize gpio {e}")
+            log_error(&appstate, format!("failed to initialize gpio {e}"))
         }
-    };
-
-    // extract this to a helper func later on
-    let now = SystemTime::now()
-        .duration_since(UNIX_EPOCH)
-        .unwrap_or_default()
-        .as_secs();
-    let hours = (now / 3600) % 24;
-    let minutes = (now / 60) % 60;
-    let seconds = now % 60;
-
-    let log_entry = format!(
-        r#"<div class="log-entry">
-            <span class="log-time">[{:02}:{:02}:{:02}]</span>
-            <span class="log-info">{}</span>
-        </div>"#,
-        hours, minutes, seconds, res
-    );
-
-    Html(log_entry)
+    }
 }
 
 async fn reset(State(appstate): State<AppState>) -> impl IntoResponse {
     let mut gpio = appstate.gpio.lock().unwrap();
 
-    let res: String = match gpio.reset() {
-        Ok(_) => "GPIO reset".to_string(),
+    match gpio.reset() {
+        Ok(_) => log_info(&appstate, "GPIO reset"),
         Err(e) => {
             println!("{e}");
-            format!("failed to reset gpio {e}")
+            log_error(&appstate, format!("failed to reset gpio {e}"))
         }
-    };
-
-    // extract this to a helper func later on
-    let now = SystemTime::now()
-        .duration_since(UNIX_EPOCH)
-        .unwrap_or_default()
-        .as_secs();
-    let hours = (now / 3600) % 24;
-    let minutes = (now / 60) % 60;
-    let seconds = now % 60;
-
-    let log_entry = format!(
-        r#"<div class="log-entry">
-            <span class="log-time">[{:02}:{:02}:{:02}]</span>
-            <span class="log-info">{}</span>
-        </div>"#,
-        hours, minutes, seconds, res
-    );
-
-    Html(log_entry)
+    }
 }
 
 async fn terminate(State(appstate): State<AppState>) -> impl IntoResponse {
     let mut gpio = appstate.gpio.lock().unwrap();
-    let res: String = match gpio.terminate() {
-        Ok(_) => "GPIO terminated".to_string(),
+
+    match gpio.terminate() {
+        Ok(_) => log_info(&appstate, "GPIO terminated"),
         Err(e) => {
             println!("{e}");
-            format!("failed to terminate gpio {e}")
+            log_error(&appstate, format!("failed to terminate gpio {e}"))
         }
-    };
-
-    let now = SystemTime::now()
-        .duration_since(UNIX_EPOCH)
-        .unwrap_or_default()
-        .as_secs();
-    let hours = (now / 3600) % 24;
-    let minutes = (now / 60) % 60;
-    let seconds = now % 60;
-
-    let log_entry = format!(
-        r#"<div class="log-entry">
-            <span class="log-time">[{:02}:{:02}:{:02}]</span>
-            <span class="log-info">{}</span>
-        </div>"#,
-        hours, minutes, seconds, res
-    );
-
-    Html(log_entry)
+    }
+}
+async fn handle_websocket(ws: WebSocketUpgrade, State(state): State<AppState>) -> Response {
+    ws.on_upgrade(move |socket| handle_socket(socket, state))
 }
 
-async fn ws_handler(ws: upgrade::IncomingUpgrade) -> impl IntoResponse {
-    let (response, fut) = ws.upgrade().unwrap();
+async fn handle_socket(socket: WebSocket, state: AppState) {
+    let mut log_rx = state.log_tx.subscribe();
 
-    tokio::task::spawn(async move {
-        if let Err(e) = handle_client(fut).await {
-            eprintln!("Error in websocket connection: {}", e);
+    println!("ws connection opened");
+
+    let (mut sender, mut receiver) = socket.split();
+
+    let mut send_task = tokio::spawn(async move {
+        while let Ok(msg) = log_rx.recv().await {
+            let fmsg = format!(
+                r#"<div id="log-container" hx-swap-oob="beforeend">{}</div>"#,
+                msg
+            );
+            println!("sending websocket message: {}", fmsg);
+            if sender.send(Message::text(fmsg)).await.is_err() {
+                break;
+            }
         }
     });
 
-    response
-}
-
-async fn handle_client(fut: upgrade::UpgradeFut) -> Result<(), WebSocketError> {
-    let mut ws = fastwebsockets::FragmentCollector::new(fut.await?);
-
-    loop {
-        let frame = ws.read_frame().await?;
-        match frame.opcode {
-            OpCode::Close => break,
-            OpCode::Text | OpCode::Binary => {
-                ws.write_frame(frame).await?;
+    let mut recv_task = tokio::spawn(async move {
+        while let Some(result) = receiver.next().await {
+            match result {
+                Ok(_) => {}
+                Err(_) => break,
             }
-            _ => {}
         }
+    });
+
+    tokio::select! {
+        _ = &mut send_task => recv_task.abort(),
+        _ = &mut recv_task => send_task.abort(),
     }
 
-    Ok(())
+    println!("ws connection closed");
 }
 
 async fn serve_html() -> Html<&'static str> {

@@ -7,7 +7,7 @@
         <link href="style.css" rel="stylesheet" />
         <script src="./htmx.min.js"></script>
     </head>
-    <body hx-ext="ws">
+    <body>
         <h1>pipin.rs</h1>
 
         <div class="main-layout">
@@ -104,8 +104,7 @@
                         <div class="controls">
                             <button
                                 hx-get="/setup"
-                                hx-target="#log-container"
-                                hx-swap="afterbegin"
+                                hx-swap="none"
                                 type="button"
                                 id="setup"
                                 class="control-btn"
@@ -114,8 +113,7 @@
                             </button>
                             <button
                                 hx-get="/reset"
-                                hx-target="#log-container"
-                                hx-swap="afterbegin"
+                                hx-swap="none"
                                 type="button"
                                 id="reset"
                                 class="control-btn"
@@ -124,8 +122,7 @@
                             </button>
                             <button
                                 hx-get="/terminate"
-                                hx-target="#log-container"
-                                hx-swap="afterbegin"
+                                hx-swap="none"
                                 type="button"
                                 id="terminate"
                                 class="control-btn"
@@ -196,7 +193,11 @@
                     </div>
                 </div>
 
-                <div class="log-box" id="log-container"></div>
+                <div 
+                    hx-ext="ws"
+                    ws-connect="/ws"
+                    hx-swap-oob="beforeend"
+                    class="log-box" id="log-container"></div>
             </div>
         </div>
         <script>
