@@ -1,65 +1,61 @@
-// Addresses
-#define BCM2710_PERI_BASE 0x3f000000
-#define BCM2708_PERI_BASE 0x20000000
-#define GPIO_BASE (BCM2710_PERI_BASE + 0x200000)
-
-#include <fcntl.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <sys/mman.h>
 #include <unistd.h>
 
+// Addresses for BCM and GPIO
+#define BCM2710_PERI_BASE 0x3f000000
+#define BCM2708_PERI_BASE 0x20000000
+#define GPIO_HW_OFFSET 0x200000
+extern unsigned int current_peri_base;
+
+// I2C device settings for the sensor
+#define I2C_ADDR 0x29
+#define I2C_DEV_DIR "/dev/i2c-1"
+
+// Memory Mapping
 #define PAGE_SIZE (4 * 1024)
 #define BLOCK_SIZE (4 * 1024)
+
+// gpio register offsets
+#define GPIO_SET_OFFSET 7
+#define GPIO_CLR_OFFSET 10
+#define GPIO_LEV_OFFSET 13
+#define GPIO_PULL_OFFSET 37
+#define GPIO_PULLCLK0_OFFSET 38
+
+#define GPIO_MIN_PIN 0
+#define GPIO_MAX_PIN 27
 
 // I/O access
 extern volatile unsigned *gpio;
 
-// GPIO setup macros. Always use INP_GPIO(x) before using OUT_GPIO(x)
-// or SET_GPIO_ALT(x,y)
-#define INP_GPIO(g) *(gpio + ((g) / 10)) &= ~(7 << (((g) % 10) * 3))
-#define OUT_GPIO(g) *(gpio + ((g) / 10)) |= (1 << (((g) % 10) * 3))
-#define SET_GPIO_ALT(g, a)                                                     \
-    *(gpio + (((g) / 10))) |= (((a) <= 3   ? (a) + 4                           \
-                                : (a) == 4 ? 3                                 \
-                                           : 2)                                \
-                               << (((g) % 10) * 3))
+// Set up a memory regions to access GPIO
+extern int setup_gpio();
+extern int terminate_gpio();
 
-#define GPIO_SET *(gpio + 7) // sets   bits which are 1 ignores bits which are 0
-#define GPIO_CLR                                                               \
-    *(gpio + 10) // clears bits which are 1 ignores bits which are 0
+// Switch between BCM2710 & BCM2708 addresses
+// 0 - bcm2710 = 0x3f000000
+// 1 - bcm2708 = 0x20000000
+extern int switch_hardware_address(int option);
 
-#define GET_GPIO(g) (*(gpio + 13) & (1 << g)) // 0 if LOW, (1<<g) if HIGH
-#define GPIO_PULL *(gpio + 37)                // Pull up/pull down
-#define GPIO_PULLCLK0 *(gpio + 38)            // Pull up/pull down clock
+// validate gpio pin between 0 - 27
+extern int validate_gpio_pin(int pin);
 
 // Set GPIO direction
 extern int set_gpio_inp(int gpio_pin);
 extern int set_gpio_out(int gpio_pin);
 
-// Clear gpio
+// Clear GPIO
 extern int clear_gpio(int gpio_pin);
 
-// get gpio
-// 0 - LOW
-// 1 - HIGH
+// Get GPIO; 0 - low, 1 - high
 extern int get_gpio(int gpio_pin);
 
 // Toggles the GPIO pin: 0 - off, 1 - on
 extern int toggle_gpio(int level, int gpio_pin);
 
-// Set up pull-down resistor for a gpio pin
+// Set up pull-down resistor for a GPIO pin
 extern int set_gpio_pulldown(int gpio_pin, int wait_time);
-// Set up pull-up resistor for gpion pin
+// Set up pull-up resistor for GPIO pin
 extern int set_gpio_pullup(int gpio_pin, int wait_time);
-
-// switch between bcm2710 & bcm2708 addresses
-// 0 - bcm2710 = 0x3f000000
-// 1 - bcm2708 = 0x20000000
-extern int switch_hardware_address(int option);
-
-// Set up a memory regions to access GPIO
-extern int setup_io();
-
-// Clean up
-extern int terminate_io();
