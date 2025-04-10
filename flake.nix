@@ -65,7 +65,7 @@
             cargo-edit
             cargo-watch
             systemfd
-            prettierd
+            qemu
           ]
           ++ builtins.attrValues ccPkgs;
 
