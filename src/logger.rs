@@ -4,7 +4,6 @@ use std::time::{SystemTime, UNIX_EPOCH};
 #[derive(Clone)]
 pub enum LogType {
     Info,
-    Warning,
     Error,
 }
 
@@ -37,7 +36,6 @@ impl LogEntry {
         let (hours, minutes, seconds) = self.time;
         let class = match self.log_type {
             LogType::Info => "log-info",
-            LogType::Warning => "log-warning",
             LogType::Error => "log-error",
         };
 
