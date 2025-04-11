@@ -1,5 +1,8 @@
 use axum::response::Html;
-use std::time::{SystemTime, UNIX_EPOCH};
+use std::time::{
+    SystemTime,
+    UNIX_EPOCH,
+};
 
 #[derive(Clone)]
 pub enum LogType {
