@@ -1,15 +1,15 @@
 use crate::{
-    AppState,
     bindings::GpioWrapper,
+    AppState,
 };
 
 use axum::{
-    Form,
     extract::{
         Path,
         State,
     },
     response::Html,
+    Form,
 };
 use serde::{
     Deserialize,
@@ -173,11 +173,11 @@ pub async fn add_action(
         ),
         "wait-for-high" => (
             Action::WaitForHigh(input.value),
-            format!("Wait For GPIO:{} HIGH", input.value),
+            format!("Wait For HIGH GPIO:{}", input.value),
         ),
         "wait-for-low" => (
             Action::WaitForLow(input.value),
-            format!("Wait For GPIO:{} LOW", input.value),
+            format!("Wait For LOW GPIO:{}", input.value),
         ),
         "set-pull-up" => (
             Action::SetPullUp(input.value),
