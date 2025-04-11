@@ -60,6 +60,7 @@ impl GpioWrapper for Gpio {
 
     fn setup(&mut self) -> Result<(), GpioError> {
         if self.initialized {
+            println!("already initialized");
             return Ok(());
         }
 
@@ -77,7 +78,7 @@ impl GpioWrapper for Gpio {
     }
 
     fn reset(&mut self) -> Result<(), GpioError> {
-        if self.initialized {
+        if !self.initialized {
             return Err(GpioError::NotInitialized);
         }
 
@@ -91,7 +92,7 @@ impl GpioWrapper for Gpio {
     }
 
     fn terminate(&mut self) -> Result<(), GpioError> {
-        if self.initialized {
+        if !self.initialized {
             return Err(GpioError::NotInitialized);
         }
 
