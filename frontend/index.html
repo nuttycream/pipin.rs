@@ -208,8 +208,7 @@
                 const pinNumber = button.getAttribute("data-pin");
 
                 button.setAttribute("hx-get", `/${pinNumber}`);
-                button.setAttribute("hx-target", "#log-container");
-                button.setAttribute("hx-swap", "afterbegin");
+                button.setAttribute("hx-swap", "none");
             });
 
             window.htmx.process(document.body);

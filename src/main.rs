@@ -44,13 +44,6 @@ fn log_info(appstate: &AppState, message: impl Into<String>) -> Html<String> {
     html
 }
 
-fn log_warning(appstate: &AppState, message: impl Into<String>) -> Html<String> {
-    let entry = LogEntry::new(LogType::Warning, message.into());
-    let html = entry.to_html();
-    let _ = appstate.log_tx.send(html.0.clone());
-    html
-}
-
 #[derive(Clone, Serialize, Deserialize, Debug)]
 enum Action {
     SetHigh(i32),
@@ -313,7 +306,7 @@ async fn toggle(State(appstate): State<AppState>, Path(pin): Path<String>) -> im
         Ok(_) => log_info(&appstate, format!("toggled gpio {}", gpio_pin)),
         Err(e) => {
             println!("{e}");
-            log_error(&appstate, format!("failed to toggle gpio {e}"))
+            log_error(&appstate, format!("failed to toggle gpio: {e}"))
         }
     }
 }
@@ -325,7 +318,7 @@ async fn setup(State(appstate): State<AppState>) -> impl IntoResponse {
         Ok(_) => log_info(&appstate, "GPIO initialized"),
         Err(e) => {
             println!("{e}");
-            log_error(&appstate, format!("failed to initialize gpio {e}"))
+            log_error(&appstate, format!("failed to initialize gpio: {e}"))
         }
     }
 }
@@ -337,7 +330,7 @@ async fn reset(State(appstate): State<AppState>) -> impl IntoResponse {
         Ok(_) => log_info(&appstate, "GPIO reset"),
         Err(e) => {
             println!("{e}");
-            log_error(&appstate, format!("failed to reset gpio {e}"))
+            log_error(&appstate, format!("failed to reset gpio: {e}"))
         }
     }
 }
@@ -349,7 +342,7 @@ async fn terminate(State(appstate): State<AppState>) -> impl IntoResponse {
         Ok(_) => log_info(&appstate, "GPIO terminated"),
         Err(e) => {
             println!("{e}");
-            log_error(&appstate, format!("failed to terminate gpio {e}"))
+            log_error(&appstate, format!("failed to terminate gpio: {e}"))
         }
     }
 }
@@ -367,7 +360,7 @@ async fn handle_socket(socket: WebSocket, state: AppState) {
     let mut send_task = tokio::spawn(async move {
         while let Ok(msg) = log_rx.recv().await {
             let fmsg = format!(
-                r#"<div id="log-container" hx-swap-oob="beforeend">{}</div>"#,
+                r#"<div id="log-container" hx-swap-oob="afterbegin">{}</div>"#,
                 msg
             );
             println!("sending websocket message: {}", fmsg);
