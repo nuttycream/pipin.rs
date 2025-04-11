@@ -7,7 +7,7 @@
         <link href="style.css" rel="stylesheet" />
         <script src="./htmx.min.js"></script>
     </head>
-    <body>
+    <body hx-ext="ws" ws-connect="/ws">
         <h1>pipin.rs</h1>
 
         <div class="main-layout">
@@ -194,8 +194,6 @@
                 </div>
 
                 <div 
-                    hx-ext="ws"
-                    ws-connect="/ws"
                     hx-swap-oob="beforeend"
                     class="log-box" id="log-container"></div>
             </div>
@@ -206,9 +204,9 @@
 
             gpioButtons.forEach((button) => {
                 const pinNumber = button.getAttribute("data-pin");
-
-                button.setAttribute("hx-get", `/${pinNumber}`);
-                button.setAttribute("hx-swap", "none");
+                button.toggleAttribute("ws-send", true);
+                button.setAttribute("hx-trigger", "click");
+                button.setAttribute("hx-vals", `{"pin": "${pinNumber}"}`);
             });
 
             window.htmx.process(document.body);

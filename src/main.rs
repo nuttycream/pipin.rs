@@ -17,7 +17,6 @@ use axum::{
             WebSocket,
             WebSocketUpgrade,
         },
-        Path,
         State,
     },
     http::header,
@@ -47,10 +46,12 @@ use logger::{
     LogEntry,
     LogType,
 };
+use serde_json::Value;
 use std::{
     env,
     error::Error,
     net::SocketAddr,
+    ops::ControlFlow,
     sync::{
         atomic::AtomicBool,
         Arc,
@@ -107,7 +108,6 @@ async fn main() -> Result<(), Box<dyn Error>> {
         .route("/setup", get(setup))
         .route("/reset", get(reset))
         .route("/terminate", get(terminate))
-        .route("/{pin}", get(toggle))
         .route("/add-action", post(add_action))
         .route("/delete-action/{index}", delete(delete_action))
         .route("/start-actions", post(start_actions))
@@ -139,25 +139,6 @@ async fn main() -> Result<(), Box<dyn Error>> {
     .await?;
 
     Ok(())
-}
-
-async fn toggle(State(appstate): State<AppState>, Path(pin): Path<String>) -> impl IntoResponse {
-    let mut gpio = appstate.gpio.lock().unwrap();
-
-    let gpio_pin = match pin.parse::<i32>() {
-        Ok(num) => num,
-        Err(_) => {
-            return log_error(&appstate, format!("invalid GPIO pin {}", pin));
-        }
-    };
-
-    match gpio.toggle(gpio_pin) {
-        Ok(_) => log_info(&appstate, format!("toggled gpio {}", gpio_pin)),
-        Err(e) => {
-            println!("{e}");
-            log_error(&appstate, format!("failed to toggle gpio: {e}"))
-        }
-    }
 }
 
 async fn setup(State(appstate): State<AppState>) -> impl IntoResponse {
@@ -206,6 +187,7 @@ async fn handle_socket(socket: WebSocket, state: AppState) {
 
     let (mut sender, mut receiver) = socket.split();
 
+    let state_clone = state.clone();
     let mut send_task = tokio::spawn(async move {
         while let Ok(msg) = log_rx.recv().await {
             let fmsg = format!(
@@ -220,20 +202,82 @@ async fn handle_socket(socket: WebSocket, state: AppState) {
     });
 
     let mut recv_task = tokio::spawn(async move {
-        while let Some(result) = receiver.next().await {
-            match result {
-                Ok(_) => {}
-                Err(_) => break,
+        while let Some(Ok(msg)) = receiver.next().await {
+            if process_message(msg, state_clone.clone()).is_break() {
+                break;
             }
         }
     });
 
     tokio::select! {
-        _ = &mut send_task => recv_task.abort(),
-        _ = &mut recv_task => send_task.abort(),
+        rv_a = (&mut send_task) => {
+            match rv_a {
+                Ok(_) => println!("messages sent"),
+                Err(a) => println!("Error sending messages {a:?}")
+            }
+            recv_task.abort();
+        },
+        rv_b = (&mut recv_task) => {
+            match rv_b {
+                Ok(_) => println!("received messages"),
+                Err(b) => println!("Error receiving messages {b:?}")
+            }
+            send_task.abort();
+        }
     }
 
     println!("ws connection closed");
+}
+
+fn process_message(msg: Message, state: AppState) -> ControlFlow<(), ()> {
+    match msg {
+        Message::Text(t) => {
+            println!("got a text message {}", t);
+
+            if let Ok(json) = serde_json::from_str::<Value>(&t) {
+                if let Some(pin_value) = json.get("pin") {
+                    let pin_str = match pin_value {
+                        Value::String(s) => Some(s.as_str()),
+                        _ => None,
+                    };
+
+                    if let Some(pin_str) = pin_str {
+                        if let Ok(pin_num) = pin_str.parse::<i32>() {
+                            println!("Toggling pin: {}", pin_num);
+
+                            let mut gpio = state.gpio.lock().unwrap();
+                            match gpio.toggle(pin_num) {
+                                Ok(_) => {
+                                    let _ = log_info(&state, format!("toggled gpio {}", pin_num));
+                                }
+                                Err(e) => {
+                                    let _ = log_error(
+                                        &state,
+                                        format!("failed to toggle gpio {}: {}", pin_num, e),
+                                    );
+                                }
+                            }
+                        } else {
+                            let _ = log_error(&state, format!("invalid GPIO pin {}", pin_str));
+                        }
+                    }
+                }
+            }
+
+            ControlFlow::Continue(())
+        }
+        Message::Binary(_) => ControlFlow::Continue(()),
+        Message::Ping(_) => ControlFlow::Continue(()),
+        Message::Pong(_) => ControlFlow::Continue(()),
+        Message::Close(close_frame) => {
+            if let Some(cf) = close_frame {
+                println!("close with code {} with reason `{}`", cf.code, cf.reason);
+            } else {
+                println!("sent close msg without closeframe");
+            }
+            return ControlFlow::Break(());
+        }
+    }
 }
 
 async fn serve_html() -> Html<&'static str> {
