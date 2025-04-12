@@ -1,64 +1,67 @@
 <!doctype html>
 <html lang="en">
-    <head>
-        <meta charset="UTF-8" />
-        <meta name="viewport" content="width=device-width, initial-scale=1" />
-        <title>pipin.rs</title>
-        <link href="style.css" rel="stylesheet" />
-        <script src="./htmx.min.js"></script>
-    </head>
-    <body hx-ext="ws" ws-connect="/ws">
-        <h1>pipin.rs</h1>
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>pipin.rs</title>
+    <link href="style.css" rel="stylesheet" />
+    <script src="./htmx.min.js"></script>
+</head>
+<body hx-ext="ws" ws-connect="/ws">
+    <h1>pipin.rs</h1>
 
-        <div class="main-layout">
-            <div class="gpio-section">
+    <div class="main-layout">
+        <div class="panel" id="gpio-panel">
+            <div class="panel-header">
                 <h2>GPIO Pins</h2>
-                <div class="gpio-layout" id="gpio-container">
-                </div>
             </div>
+            <div class="panel-content">
+                <div class="gpio-layout" id="gpio-container"></div>
+            </div>
+        </div>
 
-            <div class="options">
-                <h2>Info</h2>
+        <div class="panel" id="info-panel">
+            <div class="panel-header">
+                <h2>Info & Controls</h2>
+            </div>
+            <div class="panel-content">
                 <div class="controls">
-                    <button hx-get="/setup" 
-                        hx-swap="none" type="button" id="setup" class="control-btn">Setup</button>
-                    <button hx-get="/reset" 
-                        hx-swap="none" type="button" id="reset" class="control-btn">Reset</button>
-                    <button hx-get="/terminate" 
-                        hx-swap="none" type="button" 
-                        id="terminate" class="control-btn">Terminate</button>
+                    <button hx-get="/setup" hx-swap="none" class="btn">Setup</button>
+                    <button hx-get="/reset" hx-swap="none" class="btn">Reset</button>
+                    <button hx-get="/terminate" hx-swap="none" class="btn">Terminate</button>
                 </div>
-                <span>Hardware...</span>
-                <span>GPIO Status...</span>
-                <span>Request Latency...</span>
-                <span>Config...</span>
+                
+                <div>Hardware: Raspberry Pi 4</div>
+                <div>GPIO Status: Active</div>
 
-                <h2>Options</h2>
-                <div class="action-options">
-                    <div class="device-options">
-                        <select name="action_type" id="device-select" class="action-select">
-                            <option value="">Raspberry Pi 2+</option>
-                            <option value="">Raspberry Pi 3, 4, 5</option>
-                        </select>
-                        <button type="submit" class="control-btn">Switch Device</button>
-                    </div>
-                    <div class="device-options">
-                        <select name="action_type" id="pull-select" class="action-select">
-                            <option value="">Pull Up</option>
-                            <option value="">Pull Down</option>
-                        </select>
-                        <input type="number" value="0" class="action-input" placeholder="GPIO pin">
-                        <button type="submit" class="control-btn">Set</button>
-                    </div>
+                <h3>Options</h3>
+                <div class="form-row">
+                    <select id="device-select" class="form-select">
+                        <option value="">Raspberry Pi 2+</option>
+                        <option value="">Raspberry Pi 3, 4, 5</option>
+                    </select>
+                    <button type="button" class="btn">Switch</button>
+                </div>
+                
+                <div class="form-row">
+                    <select id="pull-select" class="form-select">
+                        <option value="">Pull Up</option>
+                        <option value="">Pull Down</option>
+                    </select>
+                    <input type="number" value="0" class="form-input" placeholder="GPIO pin">
+                    <button type="button" class="btn">Set</button>
                 </div>
             </div>
+        </div>
 
-            <div class="queue-list">
+        <div class="panel" id="queue-panel">
+            <div class="panel-header">
                 <h2>Queue</h2>
-                <form hx-post="/add-action" hx-target="#active-pins" 
-                    hx-swap="beforeend" class="action-form">
-                    <div class="action-options">
-                        <select name="action_type" id="actions" class="action-select">
+            </div>
+            <div class="panel-content">
+                <form hx-post="/add-action" hx-target="#active-pins" hx-swap="beforeend">
+                    <div class="form-row">
+                        <select name="action_type" id="actions" class="form-select">
                             <option value="set-low">Set Low</option>
                             <option value="set-high">Set High</option>
                             <option value="delay">Delay(ms)</option>
@@ -67,107 +70,84 @@
                             <option value="set-pull-down">Pull Down Clock</option>
                             <option value="set-pull-up">Pull Up Clock</option>
                         </select>
-                        <input type="number" name="value" value="0" class="action-input" />
+                        <input type="number" name="value" value="0" 
+                                class="form-input" />
+                        <button type="submit" class="btn">Add</button>
                     </div>
-                    <button type="submit" class="action-btn">Add To Queue</button>
                 </form>
+                
                 <div class="queue-actions">
                     <form hx-post="/start-actions" hx-swap="none">
-                        <button type="submit" class="queue-start">Start</button>
+                        <button type="submit" class="btn">Start</button>
                         <div class="loop">
-                            <input type="checkbox" 
-                                id="loop-actions" name="should_loop" value="true" />
+                            <input type="checkbox" id="loop-actions" name="should_loop" value="true" />
                             <label for="loop-actions">Loop</label>
                         </div>
                     </form>
-                    <button hx-post="/stop-actions" hx-swap="none" class="queue-stop">Stop</button>
+                    <button hx-post="/stop-actions" hx-swap="none" class="btn btn-danger">Stop</button>
                 </div>
-                <br />
+                
                 <div id="active-pins" class="active-pins"></div>
             </div>
         </div>
+    </div>
 
-        <div hx-swap-oob="beforeend" class="log-box" id="log-container"></div>
+    <div class="log-box" id="log-container"></div>
 
-        <script>
-        document.addEventListener("DOMContentLoaded", function () {
-            const gpioLayout = [
-                { left: { type: "power", label: "3.3V" }, 
-                    right: { type: "power", label: "5V" } },
-                { left: { type: "gpio", pin: "2", label: "GPIO 2" }, 
-                    right: { type: "power", label: "5V" } },
-                { left: { type: "gpio", pin: "3", label: "GPIO 3" }, 
-                    right: { type: "ground", label: "GND" } },
-                { left: { type: "gpio", pin: "4", label: "GPIO 4" }, 
-                    right: { type: "gpio", pin: "14", label: "GPIO 14" } },
-                { left: { type: "ground", label: "GND" }, right: 
-                    { type: "gpio", pin: "15", label: "GPIO 15" } },
-                { left: { type: "gpio", pin: "17", label: "GPIO 17" }, 
-                    right: { type: "gpio", pin: "18", label: "GPIO 18" } },
-                { left: { type: "gpio", pin: "27", label: "GPIO 27" }, 
-                    right: { type: "ground", label: "GND" } },
-                { left: { type: "gpio", pin: "22", label: "GPIO 22" }, 
-                    right: { type: "gpio", pin: "23", label: "GPIO 23" } },
-                { left: { type: "power", label: "3.3V" }, 
-                    right: { type: "gpio", pin: "24", label: "GPIO 24" } },
-                { left: { type: "gpio", pin: "10", label: "GPIO 10" }, 
-                    right: { type: "ground", label: "GND" } },
-                { left: { type: "gpio", pin: "9", label: "GPIO 9" }, 
-                    right: { type: "gpio", pin: "25", label: "GPIO 25" } },
-                { left: { type: "gpio", pin: "11", label: "GPIO 11" }, 
-                    right: { type: "gpio", pin: "8", label: "GPIO 8" } },
-                { left: { type: "ground", label: "GND" }, 
-                    right: { type: "gpio", pin: "7", label: "GPIO 7" } },
-                { left: { type: "gpio", pin: "0", label: "GPIO 0" }, 
-                    right: { type: "gpio", pin: "1", label: "GPIO 1" } },
-                { left: { type: "gpio", pin: "5", label: "GPIO 5" }, 
-                    right: { type: "ground", label: "GND" } },
-                { left: { type: "gpio", pin: "6", label: "GPIO 6" }, 
-                    right: { type: "gpio", pin: "12", label: "GPIO 12" } },
-                { left: { type: "gpio", pin: "13", label: "GPIO 13" }, 
-                    right: { type: "ground", label: "GND" } },
-                { left: { type: "gpio", pin: "19", label: "GPIO 19" }, 
-                    right: { type: "gpio", pin: "16", label: "GPIO 16" } },
-                { left: { type: "gpio", pin: "26", label: "GPIO 26" }, 
-                    right: { type: "gpio", pin: "20", label: "GPIO 20" } },
-                { left: { type: "ground", label: "GND" }, 
-                    right: { type: "gpio", pin: "21", label: "GPIO 21" } }
-            ];
+    <script>
+    document.addEventListener("DOMContentLoaded", function() {
+        // GPIO layout data
+        const gpioLayout = [
+            { left: { type: "power", label: "3.3V" }, right: { type: "power", label: "5V" } },
+            { left: { type: "gpio", pin: "2", label: "GPIO 2" }, right: { type: "power", label: "5V" } },
+            { left: { type: "gpio", pin: "3", label: "GPIO 3" }, right: { type: "ground", label: "GND" } },
+            { left: { type: "gpio", pin: "4", label: "GPIO 4" }, right: { type: "gpio", pin: "14", label: "GPIO 14" } },
+            { left: { type: "ground", label: "GND" }, right: { type: "gpio", pin: "15", label: "GPIO 15" } },
+            { left: { type: "gpio", pin: "17", label: "GPIO 17" }, right: { type: "gpio", pin: "18", label: "GPIO 18" } },
+            { left: { type: "gpio", pin: "27", label: "GPIO 27" }, right: { type: "ground", label: "GND" } },
+            { left: { type: "gpio", pin: "22", label: "GPIO 22" }, right: { type: "gpio", pin: "23", label: "GPIO 23" } },
+            { left: { type: "power", label: "3.3V" }, right: { type: "gpio", pin: "24", label: "GPIO 24" } },
+            { left: { type: "gpio", pin: "10", label: "GPIO 10" }, right: { type: "ground", label: "GND" } },
+            { left: { type: "gpio", pin: "9", label: "GPIO 9" }, right: { type: "gpio", pin: "25", label: "GPIO 25" } },
+            { left: { type: "gpio", pin: "11", label: "GPIO 11" }, right: { type: "gpio", pin: "8", label: "GPIO 8" } },
+            { left: { type: "ground", label: "GND" }, right: { type: "gpio", pin: "7", label: "GPIO 7" } },
+            { left: { type: "gpio", pin: "0", label: "GPIO 0" }, right: { type: "gpio", pin: "1", label: "GPIO 1" } },
+            { left: { type: "gpio", pin: "5", label: "GPIO 5" }, right: { type: "ground", label: "GND" } },
+            { left: { type: "gpio", pin: "6", label: "GPIO 6" }, right: { type: "gpio", pin: "12", label: "GPIO 12" } },
+            { left: { type: "gpio", pin: "13", label: "GPIO 13" }, right: { type: "ground", label: "GND" } },
+            { left: { type: "gpio", pin: "19", label: "GPIO 19" }, right: { type: "gpio", pin: "16", label: "GPIO 16" } },
+            { left: { type: "gpio", pin: "26", label: "GPIO 26" }, right: { type: "gpio", pin: "20", label: "GPIO 20" } },
+            { left: { type: "ground", label: "GND" }, right: { type: "gpio", pin: "21", label: "GPIO 21" } }
+        ];
 
-            const gpioContainer = document.getElementById("gpio-container");
+        const gpioContainer = document.getElementById("gpio-container");
+        gpioLayout.forEach(row => {
+            const rowDiv = document.createElement("div");
+            rowDiv.className = "gpio-row";
+            rowDiv.appendChild(createPinButton(row.left));
+            rowDiv.appendChild(createPinButton(row.right));
+            gpioContainer.appendChild(rowDiv);
+        });
 
-            gpioLayout.forEach(row => {
-                const rowDiv = document.createElement("div");
-                rowDiv.className = "gpio-row";
+        function createPinButton(pinData) {
+            const button = document.createElement("button");
+            button.className = `pin ${pinData.type}`;
+            button.textContent = pinData.label;
 
-                const leftButton = createPinButton(row.left);
-                rowDiv.appendChild(leftButton);
-
-                const rightButton = createPinButton(row.right);
-                rowDiv.appendChild(rightButton);
-
-                gpioContainer.appendChild(rowDiv);
-            });
-
-            function createPinButton(pinData) {
-                const button = document.createElement("button");
-                button.className = `pin ${pinData.type}`;
-                button.textContent = pinData.label;
-
-                if (pinData.type !== "gpio") {
-                    button.disabled = true;
-                } else {
-                    button.setAttribute("data-pin", pinData.pin);
-                    button.toggleAttribute("ws-send", true);
-                    button.setAttribute("hx-trigger", "click");
-                    button.setAttribute("hx-vals", `{"pin": "${pinData.pin}"}`);
-                }
-
-                return button;
+            if (pinData.type !== "gpio") {
+                button.disabled = true;
+            } else {
+                button.setAttribute("data-pin", pinData.pin);
+                button.toggleAttribute("ws-send", true);
+                button.setAttribute("hx-trigger", "click");
+                button.setAttribute("hx-vals", `{"pin": "${pinData.pin}"}`);
             }
 
-            window.htmx.process(document.body);
-        });
-        </script>
-    </body>
+            return button;
+        }
+
+        window.htmx.process(document.body);
+    });
+    </script>
+</body>
 </html>
