@@ -17,14 +17,13 @@ h2 {
 }
 
 .main-layout {
-    display: flex;
+    display: grid;
+    grid-auto-rows: 1fr;
+    grid-template-columns: 1fr 1fr 1fr;
     gap: 10px;
-    margin-bottom: 20px;
-    height: calc(100vh - 140px);
 }
 
 .gpio-section {
-    flex: 1;
     border: 1px solid gray;
     border-radius: 10px;
     padding: 10px;
@@ -33,20 +32,16 @@ h2 {
 }
 
 .controls-section {
-    flex: 3;
-    display: flex;
-    flex-direction: column;
+    flex: 1;
 }
 
 .controls-container {
-    display: flex;
     gap: 10px;
-    flex: 1;
     margin-bottom: 15px;
+    display: flex;
 }
 
 .queue-list {
-    flex: 1;
     border: 1px solid gray;
     border-radius: 10px;
     padding: 10px;
@@ -55,7 +50,6 @@ h2 {
 }
 
 .options {
-    flex: 1;
     border: 1px solid gray;
     border-radius: 10px;
     padding: 10px;
@@ -65,6 +59,7 @@ h2 {
 }
 
 .log-box {
+    margin-top: 10px;
     height: 150px;
     border: 1px solid gray;
     border-radius: 10px;
@@ -183,6 +178,13 @@ h2 {
 
 .action-options {
     display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.device-options {
+    display: flex;
+    flex-direction: row;
     gap: 10px;
 }
 
