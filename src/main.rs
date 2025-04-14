@@ -1,5 +1,6 @@
 mod actions;
 mod bindings;
+mod config;
 mod errors;
 mod logger;
 
@@ -43,8 +44,8 @@ use futures::{
 };
 use listenfd::ListenFd;
 use logger::{
-    LogEntry,
-    LogType,
+    log_error,
+    log_info,
 };
 use serde_json::Value;
 use std::{
@@ -62,20 +63,6 @@ use tokio::{
     net::TcpListener,
     sync::broadcast,
 };
-
-fn log_error<E: std::fmt::Display>(appstate: &AppState, error: E) -> Html<String> {
-    let entry = LogEntry::new(LogType::Error, format!("{}", error));
-    let html = entry.to_html();
-    let _ = appstate.log_tx.send(html.0.clone());
-    html
-}
-
-fn log_info(appstate: &AppState, message: impl Into<String>) -> Html<String> {
-    let entry = LogEntry::new(LogType::Info, message.into());
-    let html = entry.to_html();
-    let _ = appstate.log_tx.send(html.0.clone());
-    html
-}
 
 #[derive(Clone)]
 struct AppState {

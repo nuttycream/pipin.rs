@@ -1,5 +1,9 @@
 use crate::{
     bindings::GpioWrapper,
+    logger::{
+        log_error,
+        log_info,
+    },
     AppState,
 };
 
@@ -63,11 +67,13 @@ impl Display for Action {
 
 pub async fn stop_actions(State(appstate): State<AppState>) {
     println!("attempting to stop");
+    let _ = log_info(&appstate, "Attempting to Stop");
     appstate.stop_it.store(true, Ordering::Relaxed);
 }
 
 pub async fn start_actions(State(appstate): State<AppState>, Form(input): Form<LoopOption>) {
     println!("starting actions...");
+    let _ = log_info(&appstate, "Attempting to start actions");
     let should_loop = input.should_loop.as_deref() == Some("true");
     let stop = appstate.stop_it.clone();
 
@@ -83,8 +89,10 @@ pub async fn start_actions(State(appstate): State<AppState>, Form(input): Form<L
 
         for i in actions.iter() {
             println!("{i}");
+            let _ = log_info(&appstate, format!("Action: {i}"));
             if stop.load(Ordering::Relaxed) {
                 println!("found a stop action");
+                let _ = log_info(&appstate, "Found a stop action...");
                 break;
             }
 
@@ -147,6 +155,7 @@ pub async fn start_actions(State(appstate): State<AppState>, Form(input): Form<L
 pub async fn delete_action(State(appstate): State<AppState>, Path(index): Path<usize>) {
     let mut actions = appstate.actions.lock().unwrap();
     if index < actions.len() {
+        let _ = log_info(&appstate, format!("Deleting Action: {}", actions[index]));
         actions.remove(index);
     }
     println!("deleting action");
@@ -187,10 +196,19 @@ pub async fn add_action(
             Action::SetPullDown(input.value),
             format!("GPIO:{} Pull-Down", input.value),
         ),
-        _ => return Html(format!("put this in a log somewhere")),
+        _ => {
+            return {
+                let _ = log_error(
+                    &appstate,
+                    format!("Not a vnotalid action: {}", input.action_type.as_str()),
+                );
+                Html(format!("put this in a log somewhere"))
+            }
+        }
     };
 
     let mut actions = appstate.actions.lock().unwrap();
+    let _ = log_info(&appstate, format!("Adding Action: {}", action));
     actions.push(action.clone());
 
     let index = actions.len() - 1;
