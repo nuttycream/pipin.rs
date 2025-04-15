@@ -1,5 +1,6 @@
 use crate::{
     bindings::GpioWrapper,
+    config::save_actions,
     logger::{
         log_error,
         log_info,
@@ -157,7 +158,18 @@ pub async fn delete_action(State(appstate): State<AppState>, Path(index): Path<u
     if index < actions.len() {
         let _ = log_info(&appstate, format!("Deleting Action: {}", actions[index]));
         actions.remove(index);
-    }
+
+        let clone = actions.clone();
+        drop(actions);
+
+        match save_actions(&clone) {
+            Err(e) => {
+                let _ = log_error(&appstate, format!("Failed to save config: {}", e));
+            }
+            Ok(_) => println!("rming action, config save"),
+        };
+    };
+
     println!("deleting action");
 }
 
@@ -210,9 +222,17 @@ pub async fn add_action(
     let mut actions = appstate.actions.lock().unwrap();
     let _ = log_info(&appstate, format!("Adding Action: {}", action));
     actions.push(action.clone());
-
     let index = actions.len() - 1;
+
+    let clone = actions.clone();
     drop(actions);
+
+    match save_actions(&clone) {
+        Err(e) => {
+            let _ = log_error(&appstate, format!("Failed to save config: {}", e));
+        }
+        Ok(_) => println!("adding action, config save"),
+    };
 
     Html(format!(
         r#"<div class="pin-item" 
@@ -224,4 +244,34 @@ pub async fn add_action(
         </div>"#,
         index, display_text
     ))
+}
+
+pub async fn get_actions(State(appstate): State<AppState>) -> Html<String> {
+    let actions = appstate.actions.lock().unwrap();
+    let mut html = String::new();
+
+    for (i, action) in actions.iter().enumerate() {
+        let display_text = match action {
+            Action::SetHigh(pin) => format!("GPIO:{} Set High", pin),
+            Action::SetLow(pin) => format!("GPIO:{} Set Low", pin),
+            Action::Delay(time) => format!("Delay {}ms", time),
+            Action::WaitForHigh(pin) => format!("Wait For HIGH GPIO:{}", pin),
+            Action::WaitForLow(pin) => format!("Wait For LOW GPIO:{}", pin),
+            Action::SetPullUp(pin) => format!("GPIO:{} Pull-Up", pin),
+            Action::SetPullDown(pin) => format!("GPIO:{} Pull-Down", pin),
+        };
+
+        html.push_str(&format!(
+            r#"<div class="pin-item" 
+            hx-delete="/delete-action/{}" 
+            hx-target="closest .pin-item" 
+            hx-swap="outerHTML">
+                <span class="pin-number">{}</span>
+                <span class="pin-delete">DELETE</span>
+            </div>"#,
+            i, display_text
+        ));
+    }
+
+    Html(html)
 }

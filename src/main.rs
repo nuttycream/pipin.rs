@@ -7,6 +7,7 @@ mod logger;
 use actions::{
     add_action,
     delete_action,
+    get_actions,
     start_actions,
     stop_actions,
     Action,
@@ -38,6 +39,7 @@ use bindings::{
     Gpio,
     GpioWrapper,
 };
+use config::Config;
 use futures::{
     SinkExt,
     StreamExt,
@@ -80,10 +82,21 @@ async fn main() -> Result<(), Box<dyn Error>> {
         .unwrap_or(3000);
     let addr = format!("0.0.0.0:{port}");
 
+    let config = match config::load_conf() {
+        Ok(conf) => conf,
+        Err(_) => {
+            println!("failed to load config");
+            Config {
+                device: 0,
+                actions: Vec::new(),
+            }
+        }
+    };
+
     let (log_tx, _) = broadcast::channel::<String>(100);
     let appstate = AppState {
         gpio: Arc::new(Mutex::new(Gpio::new())),
-        actions: Arc::new(Mutex::new(Vec::new())),
+        actions: Arc::new(Mutex::new(config.actions)),
         stop_it: Arc::new(AtomicBool::new(false)),
         log_tx,
     };
@@ -99,6 +112,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
         .route("/delete-action/{index}", delete(delete_action))
         .route("/start-actions", post(start_actions))
         .route("/stop-actions", post(stop_actions))
+        .route("/get-actions", get(get_actions))
         .route("/ws", any(handle_websocket))
         .with_state(appstate);
 
