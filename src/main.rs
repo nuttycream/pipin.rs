@@ -218,14 +218,12 @@ async fn handle_socket(socket: WebSocket, state: AppState) {
 
     let (mut sender, mut receiver) = socket.split();
 
-    let state_clone = state.clone();
     let mut send_task = tokio::spawn(async move {
         while let Ok(msg) = log_rx.recv().await {
             let fmsg = format!(
                 r#"<div id="log-container" hx-swap-oob="afterbegin">{}</div>"#,
                 msg
             );
-            println!("sending websocket message: {}", fmsg);
             if sender.send(Message::text(fmsg)).await.is_err() {
                 break;
             }
@@ -234,7 +232,7 @@ async fn handle_socket(socket: WebSocket, state: AppState) {
 
     let mut recv_task = tokio::spawn(async move {
         while let Some(Ok(msg)) = receiver.next().await {
-            if process_message(msg, state_clone.clone()).is_break() {
+            if process_message(msg, state.clone()).is_break() {
                 break;
             }
         }
