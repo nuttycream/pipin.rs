@@ -82,20 +82,6 @@ pub fn save_actions(actions: &[Action]) -> io::Result<()> {
     save_conf(&config)
 }
 
-pub fn save_layout(layout: &GpioPins) -> io::Result<()> {
-    let mut config = match load_conf() {
-        Ok(conf) => conf,
-        Err(_) => Config {
-            device: 0,
-            actions: Vec::new(),
-            gpio_pins: default_pins(),
-        },
-    };
-
-    config.gpio_pins = layout.clone();
-    save_conf(&config)
-}
-
 pub fn default_pins() -> GpioPins {
     GpioPins {
         rows: vec![

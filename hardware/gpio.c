@@ -16,6 +16,56 @@ volatile unsigned *gpio;
 // peripheral address for gpio
 unsigned int current_peri_base = 0;
 
+// Set up a memory regions to access GPIO
+int setup_gpio() {
+    printf("gpio: setting up with address 0x%x\n", current_peri_base);
+
+    /* open /dev/mem */
+    if ((mem_fd = open("/dev/mem", O_RDWR | O_SYNC)) < 0) {
+        printf("error: can't open /dev/mem \n");
+        return -1;
+    }
+
+    unsigned int gpio_base = current_peri_base + GPIO_HW_OFFSET;
+
+    /* mmap GPIO */
+    gpio_map = mmap(
+        NULL,                   // Any adddress in our space will do
+        BLOCK_SIZE,             // Map length
+        PROT_READ | PROT_WRITE, // Enable reading & writting to mapped memory
+        MAP_SHARED,             // Shared with other processes
+        mem_fd,                 // File to map
+        gpio_base               // Offset to GPIO peripheral
+    );
+
+    close(mem_fd); // No need to keep mem_fd open after mmap
+
+    if (gpio_map == MAP_FAILED) {
+        printf("mmap error %p\n", gpio_map); // errno also set!
+        exit(-1);
+    }
+
+    // Always use volatile pointer!
+    gpio = (volatile unsigned *)gpio_map;
+
+    return 0;
+}
+
+// Handle Clean Up
+// Release the memory-mapped GPIO
+int terminate_gpio() {
+    printf("gpio: cleaning up\n");
+    // Unmap the GPIO memory if it is mapped
+    if (gpio_map != NULL) {
+        if (munmap(gpio_map, BLOCK_SIZE) == 0) {
+            gpio_map = NULL;
+        } else {
+            return -1;
+        }
+    }
+    return 0;
+}
+
 // Switch between BCM2710 & BCM2708 addresses
 // 0 - bcm2708 = 0x20000000
 // 1 - bcm2709 = 0x3f000000
@@ -101,57 +151,31 @@ int validate_gpio_pin(int pin) {
     return 0;
 }
 
-// Sets the GPIO pin to Input
-// Validates the pin number and clears bits
-int set_gpio_inp(int gpio_pin) {
-
-    if (validate_gpio_pin(gpio_pin) < 0) {
-        printf("error: invalid gpio pin; between 0-27");
+extern int set_gpio_direction(int direction, int gpio_pin) {
+    if (direction < 0 || direction > 1) {
+        printf("error: direction must be 0-1\n");
         return -1;
     }
 
+    if (validate_gpio_pin(gpio_pin) < 0) {
+        return -1;
+    }
+
+    // Set to input
     // Clear 3 bits to the GPIO pin
     *(gpio + ((gpio_pin) / 10)) &= ~(7 << ((gpio_pin) % 10) * 3);
 
-    return 0;
-}
-
-// Sets GPIO pin to Output
-// Makes sure the pin is in input mode before output configuration
-int set_gpio_out(int gpio_pin) {
-
-    if (validate_gpio_pin(gpio_pin) < 0) {
-        printf("error: invalid gpio pin; between 0-27");
-        return -1;
+    // handle output mode
+    if (direction == 1) {
+        // Set output mode by changing the required bits
+        *(gpio + ((gpio_pin) / 10)) |= (1 << (((gpio_pin) % 10) * 3));
     }
 
-    if (set_gpio_inp(gpio_pin) != 0) {
-        printf("error: failed to set_gpio_inp before set_gpio_out\n");
-        return -1;
-    }
-
-    // Set output mode by changing the required bits
-    *(gpio + ((gpio_pin) / 10)) |= (1 << (((gpio_pin) % 10) * 3));
-
-    return 0;
-}
-
-// Clears the GPIO pin
-// Sets it to low
-int clear_gpio(int gpio_pin) {
-
-    if (validate_gpio_pin(gpio_pin) < 0) {
-        printf("error: invalid gpio pin; between 0-27");
-        return -1;
-    }
-
-    // Write it to GPIO clear register for pin low
-    *(gpio + GPIO_CLR_OFFSET) = 1 << gpio_pin;
     return 0;
 }
 
 // Toggles the GPIO pin; 0 - off, 1 - on
-int toggle_gpio(int level, int gpio_pin) {
+int write_gpio(int level, int gpio_pin) {
     if (level < 0 || level > 1) {
         printf("error: invalid level; use 0(off), or 1(on)");
         return -1;
@@ -185,51 +209,18 @@ int get_gpio(int gpio_pin) {
     return ((*(gpio + GPIO_LEV_OFFSET) & (1 << gpio_pin)) ? 1 : 0);
 }
 
-// Set up a memory regions to access GPIO
-int setup_gpio() {
-    printf("gpio: setting up with address 0x%x\n", current_peri_base);
+int set_gpio_pull(int direction, int gpio_pin, int wait_time) {
 
-    /* open /dev/mem */
-    if ((mem_fd = open("/dev/mem", O_RDWR | O_SYNC)) < 0) {
-        printf("error: can't open /dev/mem \n");
+    if (direction < 0 || direction > 2) {
+        printf("error: invalid direction: 0:none, 1:down, 2:up\n");
         return -1;
     }
-
-    unsigned int gpio_base = current_peri_base + GPIO_HW_OFFSET;
-
-    /* mmap GPIO */
-    gpio_map = mmap(
-        NULL,                   // Any adddress in our space will do
-        BLOCK_SIZE,             // Map length
-        PROT_READ | PROT_WRITE, // Enable reading & writting to mapped memory
-        MAP_SHARED,             // Shared with other processes
-        mem_fd,                 // File to map
-        gpio_base               // Offset to GPIO peripheral
-    );
-
-    close(mem_fd); // No need to keep mem_fd open after mmap
-
-    if (gpio_map == MAP_FAILED) {
-        printf("mmap error %p\n", gpio_map); // errno also set!
-        exit(-1);
-    }
-
-    // Always use volatile pointer!
-    gpio = (volatile unsigned *)gpio_map;
-
-    return 0;
-}
-
-// Set up pull-down resistor for a GPIO pin
-// wait_time in useconds used for delaying
-int set_gpio_pulldown(int gpio_pin, int wait_time) {
 
     if (wait_time < 0) {
         wait_time = 100;
     }
 
     if (validate_gpio_pin(gpio_pin) < 0) {
-        printf("error: invalid gpio pin; between 0-27");
         return -1;
     }
 
@@ -237,62 +228,20 @@ int set_gpio_pulldown(int gpio_pin, int wait_time) {
     *(gpio + GPIO_PULL_OFFSET) = 0;
     usleep(wait_time);
 
-    *(gpio + GPIO_PULL_OFFSET) = 1;
+    // set pull direction 0 1 2
+    *(gpio + GPIO_PULL_OFFSET) = direction;
     usleep(wait_time);
 
-    // clock it
-    *(gpio + GPIO_PULLCLK0_OFFSET) = (1 << gpio_pin);
-    usleep(wait_time);
+    // should only clock it if direction is not 0
+    if (direction != 0) {
+        // clock it
+        *(gpio + GPIO_PULLCLK0_OFFSET) = (1 << gpio_pin);
+        usleep(wait_time);
+    }
 
-    // clear em
+    // clear registers
     *(gpio + GPIO_PULL_OFFSET) = 0;
     *(gpio + GPIO_PULLCLK0_OFFSET) = 0;
 
-    return 0;
-}
-
-// Set up pull-up resistor for a GPIO pin
-// wait_time in useconds
-int set_gpio_pullup(int gpio_pin, int wait_time) {
-
-    if (wait_time < 0) {
-        wait_time = 100;
-    }
-
-    if (validate_gpio_pin(gpio_pin) < 0) {
-        printf("error: invalid gpio pin; between 0-27");
-        return -1;
-    }
-
-    // clear first
-    *(gpio + GPIO_PULL_OFFSET) = 0;
-    usleep(wait_time);
-
-    *(gpio + GPIO_PULL_OFFSET) = 2;
-    usleep(wait_time);
-
-    // clock it
-    *(gpio + GPIO_PULLCLK0_OFFSET) = (1 << gpio_pin);
-    usleep(wait_time);
-
-    // clear em
-    *(gpio + GPIO_PULL_OFFSET) = 0;
-    *(gpio + GPIO_PULLCLK0_OFFSET) = 0;
-
-    return 0;
-}
-
-// Handle Clean Up
-// Release the memory-mapped GPIO
-int terminate_gpio() {
-    printf("gpio: cleaning up\n");
-    // Unmap the GPIO memory if it is mapped
-    if (gpio_map != NULL) {
-        if (munmap(gpio_map, BLOCK_SIZE) == 0) {
-            gpio_map = NULL;
-        } else {
-            return -1;
-        }
-    }
     return 0;
 }

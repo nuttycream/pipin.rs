@@ -46,19 +46,24 @@ int detect_peripheral_base();
 extern int validate_gpio_pin(int pin);
 
 // Set GPIO direction
-extern int set_gpio_inp(int gpio_pin);
-extern int set_gpio_out(int gpio_pin);
+//  0 -> input
+//  1 -> output
+extern int set_gpio_direction(int direction, int gpio_pin);
 
-// Clear GPIO
-extern int clear_gpio(int gpio_pin);
+// Writes to the GPIO pin with levels
+// 0 - low
+// 1 - high
+extern int write_gpio(int level, int gpio_pin);
 
 // Get GPIO; 0 - low, 1 - high
 extern int get_gpio(int gpio_pin);
 
-// Toggles the GPIO pin: 0 - off, 1 - on
-extern int toggle_gpio(int level, int gpio_pin);
-
 // Set up pull-down resistor for a GPIO pin
-extern int set_gpio_pulldown(int gpio_pin, int wait_time);
-// Set up pull-up resistor for GPIO pin
-extern int set_gpio_pullup(int gpio_pin, int wait_time);
+// direction:
+//  0 -> none
+//  1 -> down
+//  2 -> up
+// wait_time:
+//  usleep for whatever amount
+//  defaults to 100
+extern int set_gpio_pull(int direction, int gpio_pin, int wait_time);

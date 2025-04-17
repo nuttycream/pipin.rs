@@ -6,18 +6,15 @@ unsafe extern "C" {
     fn terminate_gpio() -> c_int;
     //fn switch_hardware_address(option: c_int) -> c_int;
     fn detect_peripheral_base() -> c_int;
-    fn set_gpio_inp(gpio_pin: c_int) -> c_int;
-    fn set_gpio_out(gpio_pin: c_int) -> c_int;
+    fn set_gpio_direction(direction: c_int, gpio_pin: c_int) -> c_int;
     fn get_gpio(gpio_pin: c_int) -> c_int;
-    fn clear_gpio(gpio_pin: c_int) -> c_int;
-    fn toggle_gpio(level: c_int, gpio_pin: c_int) -> c_int;
-    fn set_gpio_pulldown(gpio_pin: c_int, wait_time: c_int) -> c_int;
-    fn set_gpio_pullup(gpio_pin: c_int, wait_time: c_int) -> c_int;
+    fn write_gpio(level: c_int, gpio_pin: c_int) -> c_int;
+    fn set_gpio_pull(direction: c_int, gpio_pin: c_int, wait_time: c_int) -> c_int;
 }
 
 pub struct Gpio {
     initialized: bool,
-    pin_status: [bool; 27],
+    pin_status: [bool; 28],
 }
 
 pub trait GpioWrapper: Sized {
@@ -41,7 +38,7 @@ impl GpioWrapper for Gpio {
     fn new() -> Self {
         Gpio {
             initialized: false,
-            pin_status: [false; 27],
+            pin_status: [false; 28],
         }
     }
 
@@ -116,7 +113,7 @@ impl GpioWrapper for Gpio {
         self.validate_inp(pin)?;
 
         unsafe {
-            if set_gpio_inp(pin) < 0 {
+            if set_gpio_direction(0, pin) < 0 {
                 return Err(GpioError::Direction(pin));
             }
         }
@@ -127,7 +124,7 @@ impl GpioWrapper for Gpio {
         self.validate_inp(pin)?;
 
         unsafe {
-            if set_gpio_out(pin) < 0 {
+            if set_gpio_direction(1, pin) < 0 {
                 return Err(GpioError::Direction(pin));
             }
         }
@@ -138,7 +135,7 @@ impl GpioWrapper for Gpio {
         self.validate_inp(pin)?;
 
         unsafe {
-            if toggle_gpio(1, pin) < 0 {
+            if write_gpio(1, pin) < 0 {
                 return Err(GpioError::Set(pin));
             }
         }
@@ -152,7 +149,7 @@ impl GpioWrapper for Gpio {
         self.validate_inp(pin)?;
 
         unsafe {
-            if toggle_gpio(0, pin) < 0 {
+            if write_gpio(0, pin) < 0 {
                 return Err(GpioError::Set(pin));
             }
         }
@@ -196,7 +193,7 @@ impl GpioWrapper for Gpio {
         self.validate_inp(pin)?;
 
         unsafe {
-            if clear_gpio(pin) < 0 {
+            if write_gpio(0, pin) < 0 {
                 return Err(GpioError::Clear(pin));
             }
         }
@@ -208,7 +205,7 @@ impl GpioWrapper for Gpio {
         self.validate_inp(pin)?;
 
         unsafe {
-            if set_gpio_pulldown(pin, wait_time) < 0 {
+            if set_gpio_pull(1, pin, wait_time) < 0 {
                 return Err(GpioError::PullDown(pin));
             }
         }
@@ -220,7 +217,7 @@ impl GpioWrapper for Gpio {
         self.validate_inp(pin)?;
 
         unsafe {
-            if set_gpio_pullup(pin, wait_time) < 0 {
+            if set_gpio_pull(0, pin, wait_time) < 0 {
                 return Err(GpioError::PullUp(pin));
             }
         }
