@@ -39,7 +39,10 @@ use bindings::{
     Gpio,
     GpioWrapper,
 };
-use config::Config;
+use config::{
+    create_pin_html,
+    Config,
+};
 use futures::{
     SinkExt,
     StreamExt,
@@ -89,6 +92,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
             Config {
                 device: 0,
                 actions: Vec::new(),
+                gpio_pins: config::default_pins(),
             }
         }
     };
@@ -113,6 +117,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
         .route("/start-actions", post(start_actions))
         .route("/stop-actions", post(stop_actions))
         .route("/get-actions", get(get_actions))
+        .route("/get-pins", get(get_pins))
         .route("/ws", any(handle_websocket))
         .with_state(appstate);
 
@@ -140,6 +145,30 @@ async fn main() -> Result<(), Box<dyn Error>> {
     .await?;
 
     Ok(())
+}
+
+async fn get_pins() -> Html<String> {
+    let config = match config::load_conf() {
+        Ok(conf) => conf,
+        Err(_) => {
+            println!("failed to load config for gpio pins frontend");
+            return Html("<div>Error loading GPIO layout</div>".to_string());
+        }
+    };
+
+    let mut html = String::new();
+
+    for row in &config.gpio_pins.rows {
+        html.push_str("<div class=\"gpio-row\">");
+
+        html.push_str(&create_pin_html(&row.left));
+
+        html.push_str(&create_pin_html(&row.right));
+
+        html.push_str("</div>");
+    }
+
+    Html(html)
 }
 
 async fn setup(State(appstate): State<AppState>) -> impl IntoResponse {
@@ -177,6 +206,7 @@ async fn terminate(State(appstate): State<AppState>) -> impl IntoResponse {
         }
     }
 }
+
 async fn handle_websocket(ws: WebSocketUpgrade, State(state): State<AppState>) -> Response {
     ws.on_upgrade(move |socket| handle_socket(socket, state))
 }

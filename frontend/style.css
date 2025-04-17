@@ -32,7 +32,7 @@ h1, h2 { text-align: center; }
 
 @media (min-width: 768px) {
   .main-layout {
-    grid-template-columns: repeat(3, 1fr);
+    grid-template-columns: repeat(2, 1fr);
   }
 }
 
@@ -81,6 +81,7 @@ button, select, input {
   justify-content: center;
   flex-wrap: wrap;
   gap: var(--spacing);
+  margin: 10px;
 }
 
 .form-row {

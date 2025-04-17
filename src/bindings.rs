@@ -107,7 +107,7 @@ impl GpioWrapper for Gpio {
     }
 
     fn switch_hardware(&self, option: i32) -> Result<(), GpioError> {
-        if self.initialized {
+        if !self.initialized {
             return Err(GpioError::NotInitialized);
         }
 
