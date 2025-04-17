@@ -3,3 +3,4 @@
 .cargo
 *.o
 *.a
+config.json
