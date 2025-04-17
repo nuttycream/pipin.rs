@@ -4,6 +4,7 @@
 #include <fcntl.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
 // Global Variables for memory mapping and I/O
 int mem_fd;
@@ -12,17 +13,18 @@ void *gpio_map;
 // I/O access
 volatile unsigned *gpio;
 
-// default peripheral address for gpio
-unsigned int current_peri_base = BCM2710_PERI_BASE;
+// peripheral address for gpio
+unsigned int current_peri_base = 0;
 
-// Switch between bcm2710 & bcm2708 addresses
-// Defaults to bcm2710
-// 0 - bcm2710 = 0x3f000000
-// 1 - bcm2708 = 0x20000000
+// Switch between BCM2710 & BCM2708 addresses
+// 0 - bcm2708 = 0x20000000
+// 1 - bcm2709 = 0x3f000000
+// 2 - bcm2710 = 0x3f000000
+// 3 - bcm2711 = 0xfe000000
 int switch_hardware_address(int option) {
 
-    if (option < 0 || option > 1) {
-        printf("error: option must be 0-1\n");
+    if (option < 0 || option > 3) {
+        printf("error: option must be 0-3\n");
         return -1;
     }
 
@@ -35,11 +37,17 @@ int switch_hardware_address(int option) {
     }
 
     if (option == 0) {
-        printf("switching to bcm2710 %p\n", (void *)BCM2710_PERI_BASE);
-        current_peri_base = BCM2710_PERI_BASE;
-    } else {
-        printf("switching to bcm2708 %p\n", (void *)BCM2708_PERI_BASE);
+        printf("switching to bcm2708 0x%x\n", BCM2708_PERI_BASE);
         current_peri_base = BCM2708_PERI_BASE;
+    } else if (option == 1) {
+        printf("switching to bcm2709 0x%x\n", BCM2709_PERI_BASE);
+        current_peri_base = BCM2709_PERI_BASE;
+    } else if (option == 2) {
+        printf("switching to bcm2710 0x%x\n", BCM2710_PERI_BASE);
+        current_peri_base = BCM2710_PERI_BASE;
+    } else if (option == 3) {
+        printf("switching to bcm2711 0x%x\n", BCM2711_PERI_BASE);
+        current_peri_base = BCM2711_PERI_BASE;
     }
 
     if (gpio == NULL) {
@@ -48,6 +56,40 @@ int switch_hardware_address(int option) {
 
     printf("remapping gpio with new addy\n");
     return setup_gpio();
+}
+
+int detect_peripheral_base() {
+    FILE *fd;
+    char buf[256];
+    unsigned int gpio_base = 0, gpio_top = 0;
+
+    // essentially cat /proc/iomem | grep gpio
+    if ((fd = fopen("/proc/iomem", "r")) != NULL) {
+        while (!feof(fd)) {
+            fgets(buf, sizeof(buf), fd);
+
+            if (strstr(buf, "gpio@") != NULL) {
+                sscanf(buf, "%x-%x", &gpio_base, &gpio_top);
+                if (gpio_base != 0) {
+                    current_peri_base = gpio_base - 0x200000;
+                    printf("found peripheral base: 0x%08x at GPIO at "
+                           "0x%08x\n",
+                           current_peri_base, gpio_base);
+                    break;
+                }
+            }
+        }
+        fclose(fd);
+    }
+
+    // honestly shouldn't happen but if it does should use a known
+    // address or just return -1?
+    printf("current peri base: 0x%x\n", current_peri_base);
+    if (current_peri_base == 0) {
+        return -1;
+    }
+
+    return current_peri_base;
 }
 
 int validate_gpio_pin(int pin) {
@@ -145,7 +187,7 @@ int get_gpio(int gpio_pin) {
 
 // Set up a memory regions to access GPIO
 int setup_gpio() {
-    printf("gpio: setting up with address %p\n", &current_peri_base);
+    printf("gpio: setting up with address 0x%x\n", current_peri_base);
 
     /* open /dev/mem */
     if ((mem_fd = open("/dev/mem", O_RDWR | O_SYNC)) < 0) {

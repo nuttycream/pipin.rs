@@ -4,8 +4,10 @@
 #include <unistd.h>
 
 // Addresses for BCM and GPIO
-#define BCM2710_PERI_BASE 0x3f000000
 #define BCM2708_PERI_BASE 0x20000000
+#define BCM2709_PERI_BASE 0x3f000000
+#define BCM2710_PERI_BASE 0x3f000000
+#define BCM2711_PERI_BASE 0xfe000000
 #define GPIO_HW_OFFSET 0x200000
 extern unsigned int current_peri_base;
 
@@ -31,9 +33,14 @@ extern int setup_gpio();
 extern int terminate_gpio();
 
 // Switch between BCM2710 & BCM2708 addresses
-// 0 - bcm2710 = 0x3f000000
-// 1 - bcm2708 = 0x20000000
+// 0 - bcm2708 = 0x20000000
+// 1 - bcm2709 = 0x3f000000
+// 2 - bcm2710 = 0x3f000000
+// 3 - bcm2711 = 0xfe000000
 extern int switch_hardware_address(int option);
+
+// Helper func to detect base peripheral address
+int detect_peripheral_base();
 
 // validate gpio pin between 0 - 27
 extern int validate_gpio_pin(int pin);

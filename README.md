@@ -1,8 +1,6 @@
 # pipin.rs
 
-control gpio pins using your browser
-
-`Note: Currently supports Raspberry Pi BCM2708 and BCM2710 Chips`
+A simple self contained application to control gpio pins from your browser
 
 ## features
 
@@ -55,8 +53,6 @@ by using the raspberry pi's IP address and port number,
 example: http://192.168.68.70:3000
 ```
 
-- Select chipset in options menu (defaults to BCM2708 for Raspberry Pi Zero 2 -
-  only one I have at the moment)
 - Press 'Initialize' to setup the GPIO pins
 - bobs ur uncle
 

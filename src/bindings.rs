@@ -4,7 +4,8 @@ use std::os::raw::c_int;
 unsafe extern "C" {
     fn setup_gpio() -> c_int;
     fn terminate_gpio() -> c_int;
-    fn switch_hardware_address(option: c_int) -> c_int;
+    //fn switch_hardware_address(option: c_int) -> c_int;
+    fn detect_peripheral_base() -> c_int;
     fn set_gpio_inp(gpio_pin: c_int) -> c_int;
     fn set_gpio_out(gpio_pin: c_int) -> c_int;
     fn get_gpio(gpio_pin: c_int) -> c_int;
@@ -24,14 +25,12 @@ pub trait GpioWrapper: Sized {
     fn setup(&mut self) -> Result<(), GpioError>;
     fn reset(&mut self) -> Result<(), GpioError>;
     fn terminate(&mut self) -> Result<(), GpioError>;
-    fn switch_hardware(&self, option: i32) -> Result<(), GpioError>;
     fn set_as_input(&self, pin: i32) -> Result<(), GpioError>;
     fn set_as_output(&self, pin: i32) -> Result<(), GpioError>;
     fn set_high(&mut self, pin: i32) -> Result<(), GpioError>;
     fn set_low(&mut self, pin: i32) -> Result<(), GpioError>;
     fn toggle(&mut self, pin: i32) -> Result<bool, GpioError>;
     fn get_gpio(&mut self, pin: i32) -> Result<bool, GpioError>;
-    fn get_pin_status(&self, pin: i32) -> Result<bool, GpioError>;
     fn clear_gpio(&self, pin: i32) -> Result<(), GpioError>;
     fn set_pulldown(&self, pin: i32, wait_time: i32) -> Result<(), GpioError>;
     fn set_pullup(&self, pin: i32, wait_time: i32) -> Result<(), GpioError>;
@@ -62,6 +61,13 @@ impl GpioWrapper for Gpio {
         if self.initialized {
             println!("already initialized");
             return Ok(());
+        }
+
+        unsafe {
+            println!("attempting to detect peripheral");
+            if detect_peripheral_base() < 0 {
+                return Err(GpioError::HardwareDetection);
+            }
         }
 
         unsafe {
@@ -103,20 +109,6 @@ impl GpioWrapper for Gpio {
         }
 
         self.initialized = false;
-        Ok(())
-    }
-
-    fn switch_hardware(&self, option: i32) -> Result<(), GpioError> {
-        if !self.initialized {
-            return Err(GpioError::NotInitialized);
-        }
-
-        unsafe {
-            if switch_hardware_address(option) < 0 {
-                return Err(GpioError::Device);
-            }
-        }
-
         Ok(())
     }
 
@@ -198,12 +190,6 @@ impl GpioWrapper for Gpio {
                 return Ok(false);
             }
         }
-    }
-
-    fn get_pin_status(&self, pin: i32) -> Result<bool, GpioError> {
-        self.validate_inp(pin)?;
-
-        Ok(self.pin_status[pin as usize])
     }
 
     fn clear_gpio(&self, pin: i32) -> Result<(), GpioError> {

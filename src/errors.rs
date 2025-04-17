@@ -15,6 +15,7 @@ pub enum GpioError {
     Clear(i32),
     PullDown(i32),
     PullUp(i32),
+    HardwareDetection,
 }
 
 impl Error for GpioError {}
@@ -32,6 +33,9 @@ impl fmt::Display for GpioError {
             GpioError::Clear(pin) => write!(f, "Failed to clear GPIO {}", pin),
             GpioError::PullDown(pin) => write!(f, "Failed to set {} to pull down", pin),
             GpioError::PullUp(pin) => write!(f, "Failed to set {} to pull up", pin),
+            GpioError::HardwareDetection => {
+                write!(f, "Failed to Detect Raspberry Pi Peripheral Address")
+            }
         }
     }
 }
