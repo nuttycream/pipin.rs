@@ -4,8 +4,6 @@ use std::{
     process::Command,
 };
 
-// no longer depends on bindgen
-// will write bindings on my own
 fn main() {
     println!("cargo:rerun-if-changed=hardware/gpio.h");
     println!("cargo:rerun-if-changed=hardware/gpio.c");
@@ -14,30 +12,31 @@ fn main() {
         .canonicalize()
         .expect("cannot canonicalize path");
 
+    // Get target architecture
     let target = env::var("TARGET").unwrap_or_else(|_| String::from("x86_64-unknown-linux-gnu"));
-    println!("cargo:warning=target: {}", target);
 
-    let (compiler, archiver) = if target == "aarch64-unknown-linux-musl" {
-        let compiler = env::var("CC_AARCH64_UNKNOWN_LINUX_MUSL")
-            .unwrap_or_else(|_| String::from("aarch64-unknown-linux-musl-gcc"));
-        let archiver = env::var("AR_AARCH64_UNKNOWN_LINUX_MUSL")
-            .unwrap_or_else(|_| String::from("aarch64-unknown-linux-musl-ar"));
-        (compiler, archiver)
+    // Use target-specific compiler if cross-compiling
+    let compiler = if target.contains("aarch64") {
+        env::var("CC_aarch64").unwrap_or_else(|_| String::from("aarch64-unknown-linux-gnu-gcc"))
     } else {
-        (String::from("clang"), String::from("ar"))
+        String::from("gcc")
+    };
+
+    // Use target-specific archiver if cross-compiling
+    let archiver = if target.contains("aarch64") {
+        env::var("AR_aarch64").unwrap_or_else(|_| String::from("aarch64-unknown-linux-gnu-ar"))
+    } else {
+        String::from("ar")
     };
 
     println!("cargo:warning=compiler: {}", compiler);
 
-    let target_suffix = target.replace('-', "_");
-    let obj_path = libdir_path.join(format!("gpio_{}.o", target_suffix));
-    let lib_path = libdir_path.join(format!("libgpio_{}.a", target_suffix));
-
+    // compile
     let status = Command::new(&compiler)
         .current_dir(&libdir_path)
         .arg("-c")
         .arg("-o")
-        .arg(&obj_path)
+        .arg("gpio.o")
         .arg("gpio.c")
         .status()
         .unwrap_or_else(|_| panic!("Failed to execute {}", compiler));
@@ -46,20 +45,19 @@ fn main() {
         panic!("Failed to compile gpio.c");
     }
 
-    println!("cargo:warning=archiver: {}", archiver);
-
+    // static library
     let status = Command::new(&archiver)
         .current_dir(&libdir_path)
         .arg("rcs")
-        .arg(&lib_path)
-        .arg(&obj_path)
+        .arg("libgpio.a")
+        .arg("gpio.o")
         .status()
-        .unwrap_or_else(|_| panic!("failed to execute {}", archiver));
+        .unwrap_or_else(|_| panic!("Failed to execute {}", archiver));
 
     if !status.success() {
-        panic!("failed to create static library");
+        panic!("Failed to create static library");
     }
 
     println!("cargo:rustc-link-search={}", libdir_path.to_str().unwrap());
-    println!("cargo:rustc-link-lib=gpio_{}", target_suffix);
+    println!("cargo:rustc-link-lib=gpio");
 }
