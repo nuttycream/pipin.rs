@@ -23,7 +23,10 @@ jobs:
       - name: Install cross-compilation dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y musl-tools
+          sudo apt-get install -y musl-tools gcc-aarch64-linux-gnu
+          # symlinks because my setup is horrendously jank and im a noob
+          sudo ln -s /usr/bin/aarch64-linux-gnu-gcc /usr/local/bin/aarch64-unknown-linux-musl-gcc
+          sudo ln -s /usr/bin/aarch64-linux-gnu-ar /usr/local/bin/aarch64-unknown-linux-musl-ar
       
       - name: Build binary
         uses: actions-rs/cargo@v1
