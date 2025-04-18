@@ -1,0 +1,48 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+      
+jobs:
+  build:
+    name: Build and create zipped relaese
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      
+      - name: Install rust
+        uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: nightly
+          override: true
+          target: aarch64-unknown-linux-musl
+      
+      - name: Install cross-compilation dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y musl-tools
+      
+      - name: Build binary
+        uses: actions-rs/cargo@v1
+        with:
+          command: build
+          args: --release --target aarch64-unknown-linux-musl
+      
+      - name: Zip binary
+        run: |
+          cd target/aarch64-unknown-linux-musl/release/
+          zip pipinrs-${{ github.ref_name }}.zip pipinrs
+          cd ../../../
+      
+      - name: Create release
+        id: create_release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: |
+            ./target/aarch64-unknown-linux-musl/release/pipinrs-${{ github.ref_name }}.zip
+          draft: false
+          prerelease: false
+          generate_release_notes: true
