@@ -1,8 +1,10 @@
 # pipin.rs
 
+[![Release](https://img.shields.io/github/v/release/nuttycream/pipin.rs)](https://github.com/nuttycream/pipin.rs/releases)
+
 A simple self contained application to control gpio pins from your browser
 
-## features
+## Features
 
 - Toggle individual pins (0-27)
 - Wicked fast toggling through WebSockets
@@ -16,10 +18,11 @@ A simple self contained application to control gpio pins from your browser
 - Loop action sequences
 - Small self-contained executable (approx ~1MB)
 
-## installation
+## Installation
 
-- download from latest release
-- extract to raspberry pi
+- Download from latest
+  [release](https://github.com/nuttycream/pipin.rs/releases)
+- Extract to Raspberry Pi
 
 ```sh
 # Note: if using ssh, you can download on your main machine and rysnc/scp the executable
@@ -30,13 +33,13 @@ rsync -avz pipinrs user@hostname:~/pipin
 scp pipinrs user@pi-host:~/pipin
 ```
 
-## usage
+## Usage
 
 - Run the program:
 
 ```sh
 cd <directory>
-sudo ./pipinctrlrs # sudo is needed for direct registry access
+sudo ./pipinrs # sudo is needed for direct registry access
 ```
 
 - By default it uses port 3000, to use a different port:
@@ -56,7 +59,13 @@ example: http://192.168.68.70:3000
 - Press 'Initialize' to setup the GPIO pins
 - bobs ur uncle
 
-## attribution
+## To-Do
+
+- [ ] Device address override
+- [ ] Pins should show whether they're high or low
+- [ ] Individual GPIO pin pulldown/up
+
+## Attribution
 
 gpio.h and gpio.c library was modified from
 [gpio direct registry access example](https://elinux.org/RPi_GPIO_Code_Samples#Direct_register_access)
