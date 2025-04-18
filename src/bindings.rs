@@ -4,7 +4,7 @@ use std::os::raw::c_int;
 unsafe extern "C" {
     fn setup_gpio() -> c_int;
     fn terminate_gpio() -> c_int;
-    //fn switch_hardware_address(option: c_int) -> c_int;
+    fn switch_hardware_address(option: c_int) -> c_int;
     fn detect_peripheral_base() -> c_int;
     fn set_gpio_direction(direction: c_int, gpio_pin: c_int) -> c_int;
     fn get_gpio(gpio_pin: c_int) -> c_int;
@@ -13,6 +13,7 @@ unsafe extern "C" {
 }
 
 pub struct Gpio {
+    device: i32,
     initialized: bool,
     pin_status: [bool; 28],
 }
@@ -22,6 +23,7 @@ pub trait GpioWrapper: Sized {
     fn setup(&mut self) -> Result<(), GpioError>;
     fn reset(&mut self) -> Result<(), GpioError>;
     fn terminate(&mut self) -> Result<(), GpioError>;
+    fn switch_device(&mut self, device: i32) -> Result<(), GpioError>;
     fn set_as_input(&self, pin: i32) -> Result<(), GpioError>;
     fn set_as_output(&self, pin: i32) -> Result<(), GpioError>;
     fn set_high(&mut self, pin: i32) -> Result<(), GpioError>;
@@ -37,6 +39,7 @@ pub trait GpioWrapper: Sized {
 impl GpioWrapper for Gpio {
     fn new() -> Self {
         Gpio {
+            device: 0,
             initialized: false,
             pin_status: [false; 28],
         }
@@ -106,6 +109,26 @@ impl GpioWrapper for Gpio {
         }
 
         self.initialized = false;
+        Ok(())
+    }
+
+    fn switch_device(&mut self, device: i32) -> Result<(), GpioError> {
+        if device < 0 || device > 3 {
+            return Err(GpioError::InvalidDevice(device));
+        }
+
+        unsafe {
+            if switch_hardware_address(device) < 0 {
+                return Err(GpioError::SwitchDevice(device));
+            }
+        }
+
+        self.device = device;
+
+        // gotta re - setup
+        self.initialized = false;
+        self.setup()?;
+
         Ok(())
     }
 
