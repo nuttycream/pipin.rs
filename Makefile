@@ -1,9 +1,9 @@
 TARGET_ARCH=aarch64-unknown-linux-gnu
-ROOTNAME=target/$(TARGET_ARCH)/release/pipinrs
-ROOTNAME_DEBUG=target/$(TARGET_ARCH)/debug/pipinrs
+ROOTNAME=target/$(TARGET_ARCH)/release/pipin
+ROOTNAME_DEBUG=target/$(TARGET_ARCH)/debug/pipin
 
 REMOTE_HOST=pi08@192.168.68.68
-REMOTE_DIR=~/pipinrs/
+REMOTE_DIR=~/pipin/
 
 build:
 	cargo build

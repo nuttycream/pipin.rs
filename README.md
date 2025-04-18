@@ -1,10 +1,11 @@
-# pipin.rs  
-[![Release](https://img.shields.io/github/v/release/nuttycream/pipin.rs)](https://github.com/nuttycream/pipin.rs/releases)  
-<p align="center"> 
-  <img src="https://github.com/user-attachments/assets/f9537cfe-b7ee-4dc9-8c86-3f0a184a50bd" width="50%">
-</p>  
+# pipin
 
-A simple self contained application to control gpio pins from your browser
+[![Release](https://img.shields.io/github/v/release/nuttycream/pipin)](https://github.com/nuttycream/pipin/releases)
+
+<p align="center">
+    A simple self contained application to control gpio pins from your browser
+    <img src="https://github.com/user-attachments/assets/f9537cfe-b7ee-4dc9-8c86-3f0a184a50bd" width="50%">
+</p>
 
 ## Features
 
@@ -22,17 +23,16 @@ A simple self contained application to control gpio pins from your browser
 
 ## Installation
 
-- Download from latest
-  [release](https://github.com/nuttycream/pipin.rs/releases)
+- Download from latest [release](https://github.com/nuttycream/pipin/releases)
 - Extract to Raspberry Pi
 
 ```sh
 # Note: if using ssh, you can download on your main machine and rysnc/scp the executable
 # onto the pi. Example:
 # rsync
-rsync -avz pipinrs user@hostname:~/pipin
+rsync -avz pipin user@hostname:~/pipin
 # scp
-scp pipinrs user@pi-host:~/pipin
+scp pipin user@pi-host:~/pipin
 ```
 
 ## Usage
@@ -41,13 +41,13 @@ scp pipinrs user@pi-host:~/pipin
 
 ```sh
 cd <directory>
-sudo ./pipinrs # sudo is needed for direct registry access
+sudo ./pipin # sudo is needed for direct registry access
 ```
 
 - By default it uses port 3000, to use a different port:
 
 ```sh
-sudo ./pipinrs 8080 #runs on port 8080
+sudo ./pipin 8080 #runs on port 8080
 ```
 
 - Navigate to webpage; defaults to `0.0.0.0:3000` or `localhost:3000`
