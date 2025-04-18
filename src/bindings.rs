@@ -59,7 +59,7 @@ pub trait GpioWrapper: Sized {
         pin: i32,
     ) -> Result<bool, GpioError>;
     fn clear_gpio(&self, pin: i32)
-    -> Result<(), GpioError>;
+        -> Result<(), GpioError>;
     fn set_pulldown(
         &self,
         pin: i32,

@@ -1,14 +1,14 @@
 use crate::{
-    AppState,
     bindings::GpioWrapper,
     config::save_actions,
     logger::{log_error, log_info},
+    AppState,
 };
 
 use axum::{
-    Form,
     extract::{Path, State},
     response::Html,
+    Form,
 };
 use serde::{Deserialize, Serialize};
 use std::{
