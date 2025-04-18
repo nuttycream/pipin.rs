@@ -50,7 +50,7 @@ impl GpioWrapper for Gpio {
             return Err(GpioError::NotInitialized);
         }
 
-        if pin < 0 || pin > 27 {
+        if !(0..=27).contains(&pin) {
             return Err(GpioError::InvalidPin(pin));
         }
 
@@ -113,7 +113,7 @@ impl GpioWrapper for Gpio {
     }
 
     fn switch_device(&mut self, device: i32) -> Result<(), GpioError> {
-        if device < 0 || device > 3 {
+        if !(0..=3).contains(&device) {
             return Err(GpioError::InvalidDevice(device));
         }
 
@@ -205,9 +205,9 @@ impl GpioWrapper for Gpio {
         self.set_as_input(pin)?;
         unsafe {
             if get_gpio(pin) == 1 {
-                return Ok(true);
+                Ok(true)
             } else {
-                return Ok(false);
+                Ok(false)
             }
         }
     }

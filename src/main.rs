@@ -335,7 +335,7 @@ fn process_message(msg: Message, state: AppState) -> ControlFlow<(), ()> {
             } else {
                 println!("sent close msg without closeframe");
             }
-            return ControlFlow::Break(());
+            ControlFlow::Break(())
         }
     }
 }

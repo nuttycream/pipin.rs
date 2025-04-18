@@ -40,7 +40,7 @@ fn main() {
         .arg(&obj_path)
         .arg("gpio.c")
         .status()
-        .expect(&format!("Failed to execute {}", compiler));
+        .unwrap_or_else(|_| panic!("Failed to execute {}", compiler));
 
     if !status.success() {
         panic!("Failed to compile gpio.c");
@@ -54,7 +54,7 @@ fn main() {
         .arg(&lib_path)
         .arg(&obj_path)
         .status()
-        .expect(&format!("failed to execute {}", archiver));
+        .unwrap_or_else(|_| panic!("failed to execute {}", archiver));
 
     if !status.success() {
         panic!("failed to create static library");

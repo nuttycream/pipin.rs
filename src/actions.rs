@@ -97,7 +97,7 @@ pub async fn start_actions(State(appstate): State<AppState>, Form(input): Form<L
                 break;
             }
 
-            let _ = match i {
+            match i {
                 Action::SetHigh(pin) => {
                     let mut gpio = appstate.gpio.lock().unwrap();
                     gpio.set_as_output(*pin).unwrap();
@@ -113,7 +113,7 @@ pub async fn start_actions(State(appstate): State<AppState>, Form(input): Form<L
                 Action::Delay(time) => sleep(Duration::from_millis(*time as u64)).await,
                 Action::WaitForHigh(pin) => loop {
                     let mut gpio = appstate.gpio.lock().unwrap();
-                    if gpio.get_gpio(*pin).unwrap() == true {
+                    if gpio.get_gpio(*pin).unwrap() {
                         println!("got HIGH signal: GPIO {pin}");
                         break;
                     }
@@ -121,7 +121,7 @@ pub async fn start_actions(State(appstate): State<AppState>, Form(input): Form<L
                 },
                 Action::WaitForLow(pin) => loop {
                     let mut gpio = appstate.gpio.lock().unwrap();
-                    if gpio.get_gpio(*pin).unwrap() == false {
+                    if !gpio.get_gpio(*pin).unwrap() {
                         println!("got LOW signal: GPIO {pin}");
                         break;
                     }
@@ -214,7 +214,7 @@ pub async fn add_action(
                     &appstate,
                     format!("Not a vnotalid action: {}", input.action_type.as_str()),
                 );
-                Html(format!("put this in a log somewhere"))
+                Html("put this in a log somewhere".to_string())
             }
         }
     };
