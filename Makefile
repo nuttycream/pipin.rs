@@ -1,5 +1,6 @@
 TARGET_ARCH=aarch64-unknown-linux-gnu
 ROOTNAME=target/$(TARGET_ARCH)/release/pipinrs
+ROOTNAME_DEBUG=target/$(TARGET_ARCH)/debug/pipinrs
 
 REMOTE_HOST=pi08@192.168.68.68
 REMOTE_DIR=~/pipinrs/
@@ -17,10 +18,10 @@ release:
 	cargo build --release --target $(TARGET_ARCH)
 
 qemu: cross-build
-	qemu-aarch64 -L /usr/aarch64-linux-gnu target/$(TARGET_ARCH)/debug/pipinrs
+	qemu-aarch64 -L /usr/aarch64-linux-gnu $(ROOTNAME_DEBUG)
 
 qemu-release: release
-	qemu-aarch64 -L /usr/aarch64-linux-gnu target/$(TARGET_ARCH)/release/pipinrs
+	qemu-aarch64 -L /usr/aarch64-linux-gnu $(ROOTNAME)
 
 clean: 
 	rm -rf hardware/*.a hardware/*.o && cargo clean
