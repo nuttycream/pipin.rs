@@ -7,7 +7,7 @@ on:
       
 jobs:
   build:
-    name: Build and create zipped relaese
+    name: Build and create zipped release
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
@@ -18,21 +18,12 @@ jobs:
           profile: minimal
           toolchain: nightly
           override: true
-          target: aarch64-unknown-linux-musl
       
-      - name: Install cross-compilation dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y musl-tools gcc-aarch64-linux-gnu
-          # symlinks because my setup is horrendously jank and im a noob
-          sudo ln -s /usr/bin/aarch64-linux-gnu-gcc /usr/local/bin/aarch64-unknown-linux-musl-gcc
-          sudo ln -s /usr/bin/aarch64-linux-gnu-ar /usr/local/bin/aarch64-unknown-linux-musl-ar
+      - name: Install cross
+        run: cargo install cross
       
       - name: Build binary
-        uses: actions-rs/cargo@v1
-        with:
-          command: build
-          args: --release --target aarch64-unknown-linux-musl
+        run: cross build --release --target aarch64-unknown-linux-musl
       
       - name: Zip binary
         run: |
@@ -41,11 +32,7 @@ jobs:
           cd ../../../
       
       - name: Create release
-        id: create_release
         uses: softprops/action-gh-release@v1
         with:
-          files: |
-            ./target/aarch64-unknown-linux-musl/release/pipinrs-${{ github.ref_name }}.zip
-          draft: false
-          prerelease: false
+          files: ./target/aarch64-unknown-linux-musl/release/pipinrs-${{ github.ref_name }}.zip
           generate_release_notes: true
