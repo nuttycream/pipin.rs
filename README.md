@@ -1,6 +1,8 @@
-# pipin.rs
-
-[![Release](https://img.shields.io/github/v/release/nuttycream/pipin.rs)](https://github.com/nuttycream/pipin.rs/releases)
+# pipin.rs  
+[![Release](https://img.shields.io/github/v/release/nuttycream/pipin.rs)](https://github.com/nuttycream/pipin.rs/releases)  
+<p align="center"> 
+  <img src="https://github.com/user-attachments/assets/f9537cfe-b7ee-4dc9-8c86-3f0a184a50bd" width="50%">
+</p>  
 
 A simple self contained application to control gpio pins from your browser
 
