@@ -4,7 +4,7 @@
 
 <p align="center">
     A simple self contained application to control gpio pins from your browser
-    <img src="https://github.com/user-attachments/assets/f9537cfe-b7ee-4dc9-8c86-3f0a184a50bd" width="50%">
+    <img src="https://i.imgur.com/tIqAAj5.png">
 </p>
 
 ## Features
