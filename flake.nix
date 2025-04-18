@@ -1,5 +1,5 @@
 {
-  description = "A simple Rust flake";
+  description = "simple rust flake";
 
   inputs = {
     nixpkgs.url = "nixpkgs/nixos-unstable";
@@ -20,7 +20,6 @@
       overlays = [rust-overlay.overlays.default self.overlays.default];
     };
 
-    # Cross-compilation setup
     aarch64-pkgs = import nixpkgs {
       inherit system;
       crossSystem = {
@@ -28,7 +27,6 @@
       };
     };
 
-    # Get compiler path
     aarch64-cc = "${aarch64-pkgs.stdenv.cc}/bin/aarch64-unknown-linux-gnu-cc";
     aarch64-ar = "${aarch64-pkgs.stdenv.cc}/bin/aarch64-unknown-linux-gnu-ar";
   in {

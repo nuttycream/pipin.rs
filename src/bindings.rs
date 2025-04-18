@@ -6,10 +6,17 @@ unsafe extern "C" {
     fn terminate_gpio() -> c_int;
     fn switch_hardware_address(option: c_int) -> c_int;
     fn detect_peripheral_base() -> c_int;
-    fn set_gpio_direction(direction: c_int, gpio_pin: c_int) -> c_int;
+    fn set_gpio_direction(
+        direction: c_int,
+        gpio_pin: c_int,
+    ) -> c_int;
     fn get_gpio(gpio_pin: c_int) -> c_int;
     fn write_gpio(level: c_int, gpio_pin: c_int) -> c_int;
-    fn set_gpio_pull(direction: c_int, gpio_pin: c_int, wait_time: c_int) -> c_int;
+    fn set_gpio_pull(
+        direction: c_int,
+        gpio_pin: c_int,
+        wait_time: c_int,
+    ) -> c_int;
 }
 
 pub struct Gpio {
@@ -23,17 +30,50 @@ pub trait GpioWrapper: Sized {
     fn setup(&mut self) -> Result<(), GpioError>;
     fn reset(&mut self) -> Result<(), GpioError>;
     fn terminate(&mut self) -> Result<(), GpioError>;
-    fn switch_device(&mut self, device: i32) -> Result<(), GpioError>;
-    fn set_as_input(&self, pin: i32) -> Result<(), GpioError>;
-    fn set_as_output(&self, pin: i32) -> Result<(), GpioError>;
-    fn set_high(&mut self, pin: i32) -> Result<(), GpioError>;
-    fn set_low(&mut self, pin: i32) -> Result<(), GpioError>;
-    fn toggle(&mut self, pin: i32) -> Result<bool, GpioError>;
-    fn get_gpio(&mut self, pin: i32) -> Result<bool, GpioError>;
-    fn clear_gpio(&self, pin: i32) -> Result<(), GpioError>;
-    fn set_pulldown(&self, pin: i32, wait_time: i32) -> Result<(), GpioError>;
-    fn set_pullup(&self, pin: i32, wait_time: i32) -> Result<(), GpioError>;
-    fn validate_inp(&self, pin: i32) -> Result<i32, GpioError>;
+    fn switch_device(
+        &mut self,
+        device: i32,
+    ) -> Result<(), GpioError>;
+    fn set_as_input(
+        &self,
+        pin: i32,
+    ) -> Result<(), GpioError>;
+    fn set_as_output(
+        &self,
+        pin: i32,
+    ) -> Result<(), GpioError>;
+    fn set_high(
+        &mut self,
+        pin: i32,
+    ) -> Result<(), GpioError>;
+    fn set_low(
+        &mut self,
+        pin: i32,
+    ) -> Result<(), GpioError>;
+    fn toggle(
+        &mut self,
+        pin: i32,
+    ) -> Result<bool, GpioError>;
+    fn get_gpio(
+        &mut self,
+        pin: i32,
+    ) -> Result<bool, GpioError>;
+    fn clear_gpio(&self, pin: i32)
+    -> Result<(), GpioError>;
+    fn set_pulldown(
+        &self,
+        pin: i32,
+        wait_time: i32,
+    ) -> Result<(), GpioError>;
+    fn set_pullup(
+        &self,
+        pin: i32,
+        wait_time: i32,
+    ) -> Result<(), GpioError>;
+    fn validate_inp(
+        &self,
+        pin: i32,
+    ) -> Result<i32, GpioError>;
 }
 
 impl GpioWrapper for Gpio {
@@ -45,7 +85,10 @@ impl GpioWrapper for Gpio {
         }
     }
 
-    fn validate_inp(&self, pin: i32) -> Result<i32, GpioError> {
+    fn validate_inp(
+        &self,
+        pin: i32,
+    ) -> Result<i32, GpioError> {
         if !self.initialized {
             return Err(GpioError::NotInitialized);
         }
@@ -112,14 +155,19 @@ impl GpioWrapper for Gpio {
         Ok(())
     }
 
-    fn switch_device(&mut self, device: i32) -> Result<(), GpioError> {
+    fn switch_device(
+        &mut self,
+        device: i32,
+    ) -> Result<(), GpioError> {
         if !(0..=3).contains(&device) {
             return Err(GpioError::InvalidDevice(device));
         }
 
         unsafe {
             if switch_hardware_address(device) < 0 {
-                return Err(GpioError::SwitchDevice(device));
+                return Err(GpioError::SwitchDevice(
+                    device,
+                ));
             }
         }
 
@@ -132,7 +180,10 @@ impl GpioWrapper for Gpio {
         Ok(())
     }
 
-    fn set_as_input(&self, pin: i32) -> Result<(), GpioError> {
+    fn set_as_input(
+        &self,
+        pin: i32,
+    ) -> Result<(), GpioError> {
         self.validate_inp(pin)?;
 
         unsafe {
@@ -143,7 +194,10 @@ impl GpioWrapper for Gpio {
         Ok(())
     }
 
-    fn set_as_output(&self, pin: i32) -> Result<(), GpioError> {
+    fn set_as_output(
+        &self,
+        pin: i32,
+    ) -> Result<(), GpioError> {
         self.validate_inp(pin)?;
 
         unsafe {
@@ -154,7 +208,10 @@ impl GpioWrapper for Gpio {
         Ok(())
     }
 
-    fn set_high(&mut self, pin: i32) -> Result<(), GpioError> {
+    fn set_high(
+        &mut self,
+        pin: i32,
+    ) -> Result<(), GpioError> {
         self.validate_inp(pin)?;
 
         unsafe {
@@ -168,7 +225,10 @@ impl GpioWrapper for Gpio {
         Ok(())
     }
 
-    fn set_low(&mut self, pin: i32) -> Result<(), GpioError> {
+    fn set_low(
+        &mut self,
+        pin: i32,
+    ) -> Result<(), GpioError> {
         self.validate_inp(pin)?;
 
         unsafe {
@@ -182,7 +242,10 @@ impl GpioWrapper for Gpio {
         Ok(())
     }
 
-    fn toggle(&mut self, pin: i32) -> Result<bool, GpioError> {
+    fn toggle(
+        &mut self,
+        pin: i32,
+    ) -> Result<bool, GpioError> {
         self.validate_inp(pin)?;
 
         self.set_as_output(pin)?;
@@ -199,7 +262,10 @@ impl GpioWrapper for Gpio {
         Ok(new_state)
     }
 
-    fn get_gpio(&mut self, pin: i32) -> Result<bool, GpioError> {
+    fn get_gpio(
+        &mut self,
+        pin: i32,
+    ) -> Result<bool, GpioError> {
         self.validate_inp(pin)?;
 
         self.set_as_input(pin)?;
@@ -212,7 +278,10 @@ impl GpioWrapper for Gpio {
         }
     }
 
-    fn clear_gpio(&self, pin: i32) -> Result<(), GpioError> {
+    fn clear_gpio(
+        &self,
+        pin: i32,
+    ) -> Result<(), GpioError> {
         self.validate_inp(pin)?;
 
         unsafe {
@@ -224,7 +293,11 @@ impl GpioWrapper for Gpio {
         Ok(())
     }
 
-    fn set_pulldown(&self, pin: i32, wait_time: i32) -> Result<(), GpioError> {
+    fn set_pulldown(
+        &self,
+        pin: i32,
+        wait_time: i32,
+    ) -> Result<(), GpioError> {
         self.validate_inp(pin)?;
 
         unsafe {
@@ -236,7 +309,11 @@ impl GpioWrapper for Gpio {
         Ok(())
     }
 
-    fn set_pullup(&self, pin: i32, wait_time: i32) -> Result<(), GpioError> {
+    fn set_pullup(
+        &self,
+        pin: i32,
+        wait_time: i32,
+    ) -> Result<(), GpioError> {
         self.validate_inp(pin)?;
 
         unsafe {
