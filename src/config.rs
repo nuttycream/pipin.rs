@@ -326,10 +326,7 @@ pub fn default_pins() -> GpioPins {
 pub fn create_pin_html(pin: &DataPin) -> String {
     let mut html = String::new();
 
-    html.push_str(&format!(
-        "<button class=\"pin {}\"",
-        pin.pin_type
-    ));
+    html.push_str(&format!("<button class=\"pin {}\"", pin.pin_type));
 
     if pin.pin_type != "gpio" {
         html.push_str(" disabled");

@@ -41,10 +41,7 @@ pub struct LoopOption {
 }
 
 impl Display for Action {
-    fn fmt(
-        &self,
-        f: &mut fmt::Formatter<'_>,
-    ) -> fmt::Result {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             Action::SetHigh(pin) => {
                 write!(f, "SETHIGH{pin}")
@@ -67,9 +64,7 @@ impl Display for Action {
     }
 }
 
-pub async fn stop_actions(
-    State(appstate): State<AppState>,
-) {
+pub async fn stop_actions(State(appstate): State<AppState>) {
     println!("attempting to stop");
     let _ = log_info(&appstate, "Attempting to Stop");
     appstate.stop_it.store(true, Ordering::Relaxed);
@@ -80,17 +75,14 @@ pub async fn start_actions(
     Form(input): Form<LoopOption>,
 ) {
     println!("starting actions...");
-    let _ =
-        log_info(&appstate, "Attempting to start actions");
-    let should_loop =
-        input.should_loop.as_deref() == Some("true");
+    let _ = log_info(&appstate, "Attempting to start actions");
+    let should_loop = input.should_loop.as_deref() == Some("true");
     let stop = appstate.stop_it.clone();
 
     stop.store(false, Ordering::Relaxed);
 
     loop {
-        let actions =
-            appstate.actions.lock().unwrap().clone();
+        let actions = appstate.actions.lock().unwrap().clone();
 
         if actions.is_empty() {
             println!("actions are empty dawg");
@@ -99,56 +91,41 @@ pub async fn start_actions(
 
         for i in actions.iter() {
             println!("{i}");
-            let _ =
-                log_info(&appstate, format!("Action: {i}"));
+            let _ = log_info(&appstate, format!("Action: {i}"));
             if stop.load(Ordering::Relaxed) {
                 println!("found a stop action");
-                let _ = log_info(
-                    &appstate,
-                    "Found a stop action...",
-                );
+                let _ = log_info(&appstate, "Found a stop action...");
                 break;
             }
 
             match i {
                 Action::SetHigh(pin) => {
-                    let mut gpio =
-                        appstate.gpio.lock().unwrap();
+                    let mut gpio = appstate.gpio.lock().unwrap();
                     gpio.set_as_output(*pin).unwrap();
                     gpio.set_high(*pin).unwrap();
                     println!("set high: GPIO {pin}");
                 }
                 Action::SetLow(pin) => {
-                    let mut gpio =
-                        appstate.gpio.lock().unwrap();
+                    let mut gpio = appstate.gpio.lock().unwrap();
                     gpio.set_as_output(*pin).unwrap();
                     gpio.set_low(*pin).unwrap();
                     println!("set low: GPIO {pin}");
                 }
                 Action::Delay(time) => {
-                    sleep(Duration::from_millis(
-                        *time as u64,
-                    ))
-                    .await
+                    sleep(Duration::from_millis(*time as u64)).await
                 }
                 Action::WaitForHigh(pin) => loop {
-                    let mut gpio =
-                        appstate.gpio.lock().unwrap();
+                    let mut gpio = appstate.gpio.lock().unwrap();
                     if gpio.get_gpio(*pin).unwrap() {
-                        println!(
-                            "got HIGH signal: GPIO {pin}"
-                        );
+                        println!("got HIGH signal: GPIO {pin}");
                         break;
                     }
                     drop(gpio);
                 },
                 Action::WaitForLow(pin) => loop {
-                    let mut gpio =
-                        appstate.gpio.lock().unwrap();
+                    let mut gpio = appstate.gpio.lock().unwrap();
                     if !gpio.get_gpio(*pin).unwrap() {
-                        println!(
-                            "got LOW signal: GPIO {pin}"
-                        );
+                        println!("got LOW signal: GPIO {pin}");
                         break;
                     }
                     drop(gpio);
@@ -156,14 +133,12 @@ pub async fn start_actions(
                 // gonna use an arbitrary 100 usecond wait_time here
                 // not sure if an option should exist later
                 Action::SetPullUp(pin) => {
-                    let gpio =
-                        appstate.gpio.lock().unwrap();
+                    let gpio = appstate.gpio.lock().unwrap();
                     gpio.set_pullup(*pin, 100).unwrap();
                     println!("set pullup: GPIO {pin}");
                 }
                 Action::SetPullDown(pin) => {
-                    let gpio =
-                        appstate.gpio.lock().unwrap();
+                    let gpio = appstate.gpio.lock().unwrap();
                     gpio.set_pulldown(*pin, 100).unwrap();
                     println!("set pulldown: GPIO {pin}");
                 }
@@ -187,10 +162,8 @@ pub async fn delete_action(
 ) {
     let mut actions = appstate.actions.lock().unwrap();
     if index < actions.len() {
-        let _ = log_info(
-            &appstate,
-            format!("Deleting Action: {}", actions[index]),
-        );
+        let _ =
+            log_info(&appstate, format!("Deleting Action: {}", actions[index]));
         actions.remove(index);
 
         let clone = actions.clone();
@@ -214,10 +187,7 @@ pub async fn add_action(
     State(appstate): State<AppState>,
     Form(input): Form<ActionForm>,
 ) -> Html<String> {
-    let (action, display_text) = match input
-        .action_type
-        .as_str()
-    {
+    let (action, display_text) = match input.action_type.as_str() {
         // add bounds for adding actions
         // gpio pins should be between 0-27.
         "set-high" => (
@@ -257,19 +227,13 @@ pub async fn add_action(
                         input.action_type.as_str()
                     ),
                 );
-                Html(
-                    "put this in a log somewhere"
-                        .to_string(),
-                )
+                Html("put this in a log somewhere".to_string())
             };
         }
     };
 
     let mut actions = appstate.actions.lock().unwrap();
-    let _ = log_info(
-        &appstate,
-        format!("Adding Action: {}", action),
-    );
+    let _ = log_info(&appstate, format!("Adding Action: {}", action));
     actions.push(action.clone());
     let index = actions.len() - 1;
 
@@ -278,10 +242,8 @@ pub async fn add_action(
 
     match save_actions(&clone) {
         Err(e) => {
-            let _ = log_error(
-                &appstate,
-                format!("Failed to save config: {}", e),
-            );
+            let _ =
+                log_error(&appstate, format!("Failed to save config: {}", e));
         }
         Ok(_) => println!("adding action, config save"),
     };
@@ -298,9 +260,7 @@ pub async fn add_action(
     ))
 }
 
-pub async fn get_actions(
-    State(appstate): State<AppState>,
-) -> Html<String> {
+pub async fn get_actions(State(appstate): State<AppState>) -> Html<String> {
     let actions = appstate.actions.lock().unwrap();
     let mut html = String::new();
 

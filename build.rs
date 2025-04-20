@@ -8,22 +8,19 @@ fn main() {
         .canonicalize()
         .expect("cannot canonicalize path");
 
-    let target = env::var("TARGET").unwrap_or_else(|_| {
-        String::from("x86_64-unknown-linux-gnu")
-    });
+    let target = env::var("TARGET")
+        .unwrap_or_else(|_| String::from("x86_64-unknown-linux-gnu"));
 
     let compiler = if target.contains("aarch64") {
-        env::var("CC_aarch64").unwrap_or_else(|_| {
-            String::from("aarch64-unknown-linux-gnu-gcc")
-        })
+        env::var("CC_aarch64")
+            .unwrap_or_else(|_| String::from("aarch64-unknown-linux-gnu-gcc"))
     } else {
         String::from("gcc")
     };
 
     let archiver = if target.contains("aarch64") {
-        env::var("AR_aarch64").unwrap_or_else(|_| {
-            String::from("aarch64-unknown-linux-gnu-ar")
-        })
+        env::var("AR_aarch64")
+            .unwrap_or_else(|_| String::from("aarch64-unknown-linux-gnu-ar"))
     } else {
         String::from("ar")
     };
@@ -37,9 +34,7 @@ fn main() {
         .arg("gpio.o")
         .arg("gpio.c")
         .status()
-        .unwrap_or_else(|_| {
-            panic!("Failed to execute {}", compiler)
-        });
+        .unwrap_or_else(|_| panic!("Failed to execute {}", compiler));
 
     if !status.success() {
         panic!("Failed to compile gpio.c");
@@ -51,17 +46,12 @@ fn main() {
         .arg("libgpio.a")
         .arg("gpio.o")
         .status()
-        .unwrap_or_else(|_| {
-            panic!("Failed to execute {}", archiver)
-        });
+        .unwrap_or_else(|_| panic!("Failed to execute {}", archiver));
 
     if !status.success() {
         panic!("Failed to create static library");
     }
 
-    println!(
-        "cargo:rustc-link-search={}",
-        libdir_path.to_str().unwrap()
-    );
+    println!("cargo:rustc-link-search={}", libdir_path.to_str().unwrap());
     println!("cargo:rustc-link-lib=gpio");
 }

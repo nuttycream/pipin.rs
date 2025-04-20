@@ -55,8 +55,7 @@ pub fn log_error<E: std::fmt::Display>(
     appstate: &AppState,
     error: E,
 ) -> Html<String> {
-    let entry =
-        LogEntry::new(LogType::Error, format!("{}", error));
+    let entry = LogEntry::new(LogType::Error, format!("{}", error));
     let html = entry.to_html();
     let _ = appstate.log_tx.send(html.0.clone());
     html
@@ -66,8 +65,7 @@ pub fn log_info(
     appstate: &AppState,
     message: impl Into<String>,
 ) -> Html<String> {
-    let entry =
-        LogEntry::new(LogType::Info, message.into());
+    let entry = LogEntry::new(LogType::Info, message.into());
     let html = entry.to_html();
     let _ = appstate.log_tx.send(html.0.clone());
     html
