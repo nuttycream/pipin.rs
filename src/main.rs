@@ -1,7 +1,7 @@
 mod actions;
-mod bindings;
 mod config;
 mod errors;
+mod gpio;
 mod logger;
 
 use actions::{
@@ -10,16 +10,16 @@ use actions::{
 use axum::{
     extract::{
         ws::{Message, WebSocket, WebSocketUpgrade},
-        Path, State,
+        State,
     },
     http::header,
     response::{Html, IntoResponse, Response},
-    routing::{any, delete, get, post},
+    routing::{any, get},
     Router,
 };
-use bindings::{Gpio, GpioWrapper};
 use config::{create_pin_html, Config};
 use futures::{SinkExt, StreamExt};
+use gpio::Gpio;
 use listenfd::ListenFd;
 use logger::{log_error, log_info};
 use serde_json::Value;
@@ -75,15 +75,15 @@ async fn main() -> Result<(), Box<dyn Error>> {
         .route("/setup", get(setup))
         .route("/reset", get(reset))
         .route("/terminate", get(terminate))
-        .route("/add-action", post(add_action))
-        .route("/delete-action/{index}", delete(delete_action))
-        .route("/start-actions", post(start_actions))
-        .route("/stop-actions", post(stop_actions))
-        .route("/get-actions", get(get_actions))
         .route("/get-pins", get(get_pins))
+        //.route("/add-action", post(add_action))
+        //.route("/delete-action/{index}", delete(delete_action))
+        //.route("/start-actions", post(start_actions))
+        //.route("/stop-actions", post(stop_actions))
+        //.route("/get-actions", get(get_actions))
         // nothing is calling this endpoint as of yet, since
         // i havent decided how I want to override it
-        .route("/switch/{device}", get(switch_device))
+        //.route("/switch/{device}", get(switch_device))
         .route("/ws", any(handle_websocket))
         .with_state(appstate);
 
@@ -113,6 +113,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
     Ok(())
 }
 
+/*
 async fn switch_device(
     State(appstate): State<AppState>,
     Path(device): Path<i32>,
@@ -139,6 +140,7 @@ async fn switch_device(
         }
     }
 }
+*/
 
 async fn get_pins() -> Html<String> {
     let config = match config::load_conf() {
