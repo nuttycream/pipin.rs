@@ -327,6 +327,8 @@ impl Gpio {
         self.validate_input(pin)?;
 
         // set to output first
+        // i assume this will only be triggered
+        // when we want to output a signal no?
         self.set_direction(pin, PinDirection::Output)?;
 
         unsafe {

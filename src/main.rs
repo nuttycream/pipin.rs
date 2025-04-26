@@ -14,7 +14,7 @@ use axum::{
     },
     http::header,
     response::{Html, IntoResponse, Response},
-    routing::{any, get},
+    routing::{any, delete, get, post},
     Router,
 };
 use config::{create_pin_html, Config};
@@ -76,14 +76,11 @@ async fn main() -> Result<(), Box<dyn Error>> {
         .route("/reset", get(reset))
         .route("/terminate", get(terminate))
         .route("/get-pins", get(get_pins))
-        //.route("/add-action", post(add_action))
-        //.route("/delete-action/{index}", delete(delete_action))
-        //.route("/start-actions", post(start_actions))
-        //.route("/stop-actions", post(stop_actions))
-        //.route("/get-actions", get(get_actions))
-        // nothing is calling this endpoint as of yet, since
-        // i havent decided how I want to override it
-        //.route("/switch/{device}", get(switch_device))
+        .route("/add-action", post(add_action))
+        .route("/delete-action/{index}", delete(delete_action))
+        .route("/start-actions", post(start_actions))
+        .route("/stop-actions", post(stop_actions))
+        .route("/get-actions", get(get_actions))
         .route("/ws", any(handle_websocket))
         .with_state(appstate);
 
@@ -112,35 +109,6 @@ async fn main() -> Result<(), Box<dyn Error>> {
 
     Ok(())
 }
-
-/*
-async fn switch_device(
-    State(appstate): State<AppState>,
-    Path(device): Path<i32>,
-) -> impl IntoResponse {
-    let mut gpio = appstate.gpio.lock().unwrap();
-
-    match gpio.switch_device(device) {
-        Ok(_) => {
-            match config::load_conf() {
-                Ok(mut conf) => {
-                    conf.device = device;
-                    let _ = config::save_conf(&conf);
-                }
-                Err(_) => {
-                    println!("failed to update config new device");
-                }
-            }
-
-            log_info(&appstate, format!("Switched to device {}", device))
-        }
-        Err(e) => {
-            println!("{e}");
-            log_error(&appstate, format!("Failed to switch device: {e}"))
-        }
-    }
-}
-*/
 
 async fn get_pins() -> Html<String> {
     let config = match config::load_conf() {

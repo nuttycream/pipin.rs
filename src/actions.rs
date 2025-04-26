@@ -1,5 +1,6 @@
 use crate::{
     config::save_actions,
+    gpio::{PinLevel, PullType},
     logger::{log_error, log_info},
     AppState,
 };
@@ -13,7 +14,9 @@ use serde::{Deserialize, Serialize};
 use std::{
     fmt::{self, Display},
     sync::atomic::Ordering,
+    time::Duration,
 };
+use tokio::time::sleep;
 
 #[derive(Clone, Serialize, Deserialize, Debug)]
 pub enum Action {
@@ -95,53 +98,47 @@ pub async fn start_actions(
                 break;
             }
 
-            /*
-                match i {
-                    Action::SetHigh(pin) => {
-                        let mut gpio = appstate.gpio.lock().unwrap();
-                        gpio.set_as_output(*pin).unwrap();
-                        gpio.set_high(*pin).unwrap();
-                        println!("set high: GPIO {pin}");
+            match i {
+                Action::SetHigh(pin) => {
+                    let mut gpio = appstate.gpio.lock().unwrap();
+                    gpio.set_level(*pin, PinLevel::High).unwrap();
+                    println!("set high: GPIO {pin}");
+                }
+                Action::SetLow(pin) => {
+                    let mut gpio = appstate.gpio.lock().unwrap();
+                    gpio.set_level(*pin, PinLevel::Low).unwrap();
+                    println!("set low: GPIO {pin}");
+                }
+                Action::Delay(time) => {
+                    sleep(Duration::from_millis(*time as u64)).await
+                }
+                Action::WaitForHigh(pin) => loop {
+                    let gpio = appstate.gpio.lock().unwrap();
+                    if let PinLevel::High = gpio.get_level(*pin).unwrap() {
+                        println!("got HIGH signal: GPIO {pin}");
+                        break;
                     }
-                    Action::SetLow(pin) => {
-                        let mut gpio = appstate.gpio.lock().unwrap();
-                        gpio.set_as_output(*pin).unwrap();
-                        gpio.set_low(*pin).unwrap();
-                        println!("set low: GPIO {pin}");
+                    drop(gpio);
+                },
+                Action::WaitForLow(pin) => loop {
+                    let gpio = appstate.gpio.lock().unwrap();
+                    if let PinLevel::Low = gpio.get_level(*pin).unwrap() {
+                        println!("got LOW signal: GPIO {pin}");
+                        break;
                     }
-                    Action::Delay(time) => {
-                        sleep(Duration::from_millis(*time as u64)).await
-                    }
-                    Action::WaitForHigh(pin) => loop {
-                        let mut gpio = appstate.gpio.lock().unwrap();
-                        if gpio.get_gpio(*pin).unwrap() {
-                            println!("got HIGH signal: GPIO {pin}");
-                            break;
-                        }
-                        drop(gpio);
-                    },
-                    Action::WaitForLow(pin) => loop {
-                        let mut gpio = appstate.gpio.lock().unwrap();
-                        if !gpio.get_gpio(*pin).unwrap() {
-                            println!("got LOW signal: GPIO {pin}");
-                            break;
-                        }
-                        drop(gpio);
-                    },
-                    // gonna use an arbitrary 100 usecond wait_time here
-                    // not sure if an option should exist later
-                    Action::SetPullUp(pin) => {
-                        let gpio = appstate.gpio.lock().unwrap();
-                        gpio.set_pullup(*pin, 100).unwrap();
-                        println!("set pullup: GPIO {pin}");
-                    }
-                    Action::SetPullDown(pin) => {
-                        let gpio = appstate.gpio.lock().unwrap();
-                        gpio.set_pulldown(*pin, 100).unwrap();
-                        println!("set pulldown: GPIO {pin}");
-                    }
-                };
-            */
+                    drop(gpio);
+                },
+                Action::SetPullUp(pin) => {
+                    let mut gpio = appstate.gpio.lock().unwrap();
+                    gpio.set_pull_type(*pin, PullType::Up).unwrap();
+                    println!("set pullup: GPIO {pin}");
+                }
+                Action::SetPullDown(pin) => {
+                    let mut gpio = appstate.gpio.lock().unwrap();
+                    gpio.set_pull_type(*pin, PullType::Down).unwrap();
+                    println!("set pulldown: GPIO {pin}");
+                }
+            };
         }
 
         if !should_loop {
