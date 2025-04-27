@@ -3,6 +3,7 @@ use nix::{
     libc::O_SYNC,
     sys::mman::{mmap, munmap, MapFlags, ProtFlags},
 };
+use serde::{Deserialize, Serialize};
 use std::{
     fs::OpenOptions,
     num::NonZero,
@@ -21,7 +22,7 @@ const GPIO_PULL_OFFSET: usize = 37;
 const GPIO_PULLCLK0_OFFSET: usize = 38;
 
 // https://pinout.xyz/
-#[derive(Copy, Clone, Debug)]
+#[derive(Copy, Clone, Debug, Serialize, Deserialize, PartialEq)]
 pub enum PinType {
     Power5v,  // red
     Power3v3, // orange
@@ -409,8 +410,10 @@ impl Gpio {
         }
     }
 
-    // get whether pin is set to output or input
-    pub fn get_direction(&self, pin: i32) -> Result<PinDirection, GpioError> {
+    // do we realistically need this?
+    // assuming in the future we need to determine direction
+    // at a quick glance for the frontend
+    pub fn _get_direction(&self, pin: i32) -> Result<PinDirection, GpioError> {
         self.validate_input(pin)?;
         match self.pins[pin as usize].direction {
             PinDirection::Input => Ok(PinDirection::Input),
