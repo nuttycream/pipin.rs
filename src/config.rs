@@ -326,16 +326,24 @@ pub fn default_pins() -> GpioPins {
 pub fn create_pin_html(pin: &DataPin) -> String {
     let mut html = String::new();
 
-    html.push_str(&format!("<button class=\"pin {}\"", pin.pin_type));
+    if pin.pin_type == "gpio" && pin.pin.is_some() {
+        // going to unwrap for pin # since
+        // i doubt we'll never have it.
+        let pin_num = pin.pin.as_ref().unwrap();
+        html.push_str(&format!(
+            "<button id={} class=\"pin {}\"",
+            pin_num, pin.pin_type
+        ));
+    } else {
+        html.push_str(&format!("<button class=\"pin {}\"", pin.pin_type));
+    }
 
     if pin.pin_type != "gpio" {
         html.push_str(" disabled");
     } else if let Some(pin_num) = &pin.pin {
         html.push_str(&format!(
-            " data-pin=\"{}\" ws-send 
-                hx-trigger=\"click\" 
-                hx-vals='{{\"pin\": \"{}\"}}'",
-            pin_num, pin_num
+            " ws-send hx-trigger=\"click\" hx-vals='{{\"pin\": \"{}\"}}'",
+            pin_num
         ));
     }
 

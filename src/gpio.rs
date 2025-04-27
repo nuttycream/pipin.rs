@@ -1,3 +1,8 @@
+use crate::errors::GpioError;
+use nix::{
+    libc::O_SYNC,
+    sys::mman::{mmap, munmap, MapFlags, ProtFlags},
+};
 use std::{
     fs::OpenOptions,
     num::NonZero,
@@ -6,12 +11,6 @@ use std::{
     sync::atomic::{AtomicPtr, Ordering},
     thread::sleep,
     time::Duration,
-};
-
-use crate::errors::GpioError;
-use nix::{
-    libc::O_SYNC,
-    sys::mman::{mmap, munmap, MapFlags, ProtFlags},
 };
 
 const BLOCK_SIZE: usize = 4096;
@@ -64,7 +63,6 @@ pub struct Pin {
 
 pub struct Gpio {
     gpio_map: Option<AtomicPtr<u32>>,
-    device: i64,
     initialized: bool,
     pins: [Pin; 28],
 }
@@ -73,7 +71,6 @@ impl Gpio {
     pub fn new() -> Self {
         Gpio {
             gpio_map: None,
-            device: 0,
             initialized: false,
             pins: [Pin {
                 pin_type: PinType::Gpio,
@@ -269,18 +266,22 @@ impl Gpio {
         Ok(())
     }
 
-    // wrapper for set_level() for toglging
-    pub fn toggle(&mut self, pin: i32) -> Result<(), GpioError> {
+    // wrapper for set_level() for toggling
+    pub fn toggle(&mut self, pin: i32) -> Result<PinLevel, GpioError> {
         self.validate_input(pin)?;
 
         let current_level = self.get_level(pin)?;
 
         match current_level {
-            PinLevel::High => self.set_level(pin, PinLevel::Low)?,
-            PinLevel::Low => self.set_level(pin, PinLevel::High)?,
+            PinLevel::High => {
+                self.set_level(pin, PinLevel::Low)?;
+                Ok(PinLevel::Low)
+            }
+            PinLevel::Low => {
+                self.set_level(pin, PinLevel::High)?;
+                Ok(PinLevel::High)
+            }
         }
-
-        Ok(())
     }
 
     pub fn set_direction(
@@ -408,6 +409,7 @@ impl Gpio {
         }
     }
 
+    // get whether pin is set to output or input
     pub fn get_direction(&self, pin: i32) -> Result<PinDirection, GpioError> {
         self.validate_input(pin)?;
         match self.pins[pin as usize].direction {
@@ -419,17 +421,24 @@ impl Gpio {
 
 impl Drop for Gpio {
     fn drop(&mut self) {
-        if self.initialized {
-            if let Some(atomic_ptr) = &self.gpio_map {
-                unsafe {
-                    let ptr = atomic_ptr.load(Ordering::SeqCst);
-                    if !ptr.is_null() {
-                        if let Some(non_null) = NonNull::new(ptr as *mut _) {
-                            munmap(non_null.cast(), 4096).ok();
-                            println!("Unmapping memory")
-                        }
-                    }
-                }
+        if !self.initialized {
+            return;
+        }
+
+        let atomic_ptr = match &self.gpio_map {
+            Some(ptr) => ptr,
+            None => return,
+        };
+
+        let ptr = atomic_ptr.load(Ordering::SeqCst);
+        if ptr.is_null() {
+            return;
+        }
+
+        unsafe {
+            if let Some(non_null) = NonNull::new(ptr as *mut _) {
+                munmap(non_null.cast(), BLOCK_SIZE).ok();
+                println!("Unmapping memory")
             }
         }
     }
