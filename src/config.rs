@@ -106,12 +106,10 @@ pub fn create_pin_html(pin: &DataPin) -> String {
             pin_num, powered
         ));
     } else {
-        html.push_str(&format!("<button class=\"pin {}\"", powered));
+        html.push_str(&format!("<button class=\"pin {}\" disabled", powered));
     }
 
-    if !is_gpio {
-        html.push_str(" disabled");
-    } else if let Some(pin_num) = &pin.pin {
+    if let Some(pin_num) = &pin.pin {
         html.push_str(&format!(
             " ws-send hx-trigger=\"click\" hx-vals='{{\"pin\": \"{}\"}}'",
             pin_num
