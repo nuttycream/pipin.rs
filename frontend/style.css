@@ -101,27 +101,70 @@ button, select, input {
 .gpio-layout {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 4px;
 }
 
 .gpio-row {
   display: flex;
   gap: 8px;
+  margin-bottom: 2px;
+}
+
+.pin-wrapper {
+  flex: 1;
 }
 
 .pin {
-  flex: 1;
-  text-align: center;
-  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 30px;
+  padding: 5px;
+  border-radius: var(--radius);
+  width: 100%;
 }
 
-.pin:disabled { cursor: not-allowed; opacity: 0.7; }
+.power {
+  background-color: var(--danger);
+}
 
-.gpio { background-color: var(--primary); }
-.power { background-color: var(--danger); }
 .ground {
   background-color: var(--bg);
   border: 1px solid var(--border);
+}
+
+.gpio {
+  background-color: var(--primary);
+  position: relative;
+}
+
+.gpio::before {
+  content: "";
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  margin-right: 5px;
+  background-color: #666;
+}
+
+input:checked + .gpio {
+  background-color: var(--primary-hover);
+}
+
+input:checked + .gpio::before {
+  background-color: rgb(0, 255, 0);
+}
+
+.toggle-switch {
+  display: block;
+  width: 100%;
+  cursor: pointer;
+}
+
+.pin-checkbox {
+  position: absolute;
+  opacity: 0;
 }
 
 .queue-actions {
