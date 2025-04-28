@@ -17,7 +17,7 @@ use axum::{
     routing::{any, delete, get, post},
     Router,
 };
-use config::{create_pin_html, Config};
+use config::Config;
 use futures::{SinkExt, StreamExt};
 use gpio::{Gpio, PinLevel};
 use listenfd::ListenFd;
@@ -53,9 +53,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
         Err(_) => {
             println!("failed to load config");
             Config {
-                device: 0,
                 actions: Vec::new(),
-                gpio_pins: config::default_pins(),
             }
         }
     };
@@ -112,28 +110,22 @@ async fn main() -> Result<(), Box<dyn Error>> {
     Ok(())
 }
 
-async fn get_pins() -> Html<String> {
-    let config = match config::load_conf() {
-        Ok(conf) => conf,
+async fn get_pins(State(appstate): State<AppState>) -> Html<String> {
+    let gpio = match appstate.gpio.lock() {
+        Ok(gpio) => gpio,
         Err(_) => {
             println!("failed to load config for gpio pins frontend");
             return Html("<div>Error loading GPIO layout</div>".to_string());
         }
     };
 
-    let mut html = String::new();
-
-    for row in &config.gpio_pins.rows {
-        html.push_str("<div class=\"gpio-row\">");
-
-        html.push_str(&create_pin_html(&row.left));
-
-        html.push_str(&create_pin_html(&row.right));
-
-        html.push_str("</div>");
+    match gpio.get_html_pins() {
+        Ok(html) => Html(html),
+        Err(e) => {
+            println!("{e}");
+            log_error(&appstate, "Failed to get pins")
+        }
     }
-
-    Html(html)
 }
 
 async fn setup(State(appstate): State<AppState>) -> impl IntoResponse {
@@ -282,6 +274,8 @@ fn toggle_pin(pin: i32, state: AppState) {
         }
     };
 
+    // todo this needs to be redone as well
+    // as update_pin since we're reacquiring the lock
     match gpio.toggle(pin) {
         Ok(new_level) => {
             let level_str = match new_level {
@@ -294,7 +288,7 @@ fn toggle_pin(pin: i32, state: AppState) {
                 format!("Toggle GPIO {} -> {}", pin, level_str),
             );
 
-            update_pin(pin, new_level, &state);
+            let _ = state.toggle_tx.send(gpio.update_pin(pin));
         }
         Err(e) => {
             let _ = log_error(
@@ -303,25 +297,6 @@ fn toggle_pin(pin: i32, state: AppState) {
             );
         }
     }
-}
-
-fn update_pin(pin: i32, level: PinLevel, state: &AppState) {
-    let level = if matches!(level, PinLevel::High) {
-        "high"
-    } else {
-        "low"
-    };
-
-    let pin_update = format!(
-        r#"<button id="{0}" class="pin gpio {1}" ws-send 
-           hx-trigger="click" hx-vals='{{"pin": "{0}"}}'>GPIO {0}</button>"#,
-        pin, level
-    );
-
-    let _ = state.toggle_tx.send(format!(
-        r#"<div id="pin-{}" hx-swap-oob="outerHTML">{}</div>"#,
-        pin, pin_update
-    ));
 }
 
 async fn serve_html() -> Html<&'static str> {

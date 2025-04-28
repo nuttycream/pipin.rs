@@ -3,7 +3,6 @@ use nix::{
     libc::O_SYNC,
     sys::mman::{mmap, munmap, MapFlags, ProtFlags},
 };
-use serde::{Deserialize, Serialize};
 use std::{
     fs::OpenOptions,
     num::NonZero,
@@ -22,7 +21,7 @@ const GPIO_PULL_OFFSET: usize = 37;
 const GPIO_PULLCLK0_OFFSET: usize = 38;
 
 // https://pinout.xyz/
-#[derive(Copy, Clone, Debug, Serialize, Deserialize, PartialEq)]
+#[derive(Copy, Clone, Debug)]
 pub enum PinType {
     Power5v,  // red
     Power3v3, // orange
@@ -54,18 +53,31 @@ pub enum PinLevel {
     Low,
 }
 
-#[derive(Copy, Clone, Debug)]
+#[derive(Clone, Debug)]
+pub enum PinColumn {
+    Left,
+    Right,
+}
+
+#[derive(Clone, Debug)]
 pub struct Pin {
-    pin_type: PinType,
+    // ui stuff
+    pub number: Option<i32>,
+    pub pin_type: PinType,
+    pub label: String,
+    pub column: PinColumn,
+
+    //physical state
     pull: PullType,
     level: PinLevel,
     direction: PinDirection,
 }
 
 pub struct Gpio {
+    pub initialized: bool,
+    pub pins: Vec<Pin>,
+
     gpio_map: Option<AtomicPtr<u32>>,
-    initialized: bool,
-    pins: [Pin; 28],
 }
 
 impl Gpio {
@@ -73,12 +85,7 @@ impl Gpio {
         Gpio {
             gpio_map: None,
             initialized: false,
-            pins: [Pin {
-                pin_type: PinType::Gpio,
-                pull: PullType::None,
-                level: PinLevel::Low,
-                direction: PinDirection::Input,
-            }; 28],
+            pins: default_pins(),
         }
     }
 
@@ -144,6 +151,12 @@ impl Gpio {
             println!("GPIO device already initialized.");
             return Ok(());
         }
+
+        /*
+        for pin_data in default_pins() {
+            self.pins.insert(pin_data.number, pin_data);
+        }
+        */
 
         unsafe {
             let block_size = match NonZero::new(BLOCK_SIZE) {
@@ -213,18 +226,6 @@ impl Gpio {
         self.initialized = true;
         Ok(())
     }
-
-    /* to be deprecated
-    pub fn detect_hardware_address(&self) -> Result<u64, GpioError> {
-        // cat /proc/iomem | grep gpio
-        // otherwise
-        // fallback for pi zero 2w
-        // 0x3f20000
-        // fallback for pi 4
-        // 0xfe20000
-        Ok(0x3f20000)
-    }
-    */
 
     pub fn reset(&mut self) -> Result<(), GpioError> {
         if !self.initialized {
@@ -318,6 +319,7 @@ impl Gpio {
         }
 
         self.pins[pin as usize].direction = direction;
+
         Ok(())
     }
 
@@ -391,14 +393,6 @@ impl Gpio {
 
     pub fn get_level(&self, pin: i32) -> Result<PinLevel, GpioError> {
         self.validate_input(pin)?;
-        /*
-        * should only used to get current frontend state imo
-        * should i separate this into its own?
-        match self.pins[pin as usize].level {
-            PinLevel::High => return Ok(PinLevel::High),
-            PinLevel::Low => return Ok(PinLevel::Low),
-        };
-        */
 
         unsafe {
             let level = self.read_register(GPIO_LEV_OFFSET)?;
@@ -419,6 +413,97 @@ impl Gpio {
             PinDirection::Input => Ok(PinDirection::Input),
             PinDirection::Output => Ok(PinDirection::Output),
         }
+    }
+
+    pub fn get_html_pins(&self) -> Result<String, GpioError> {
+        let left_pins: Vec<&Pin> = self
+            .pins
+            .iter()
+            .filter(|pin| matches!(pin.column, PinColumn::Left))
+            .collect();
+
+        let right_pins: Vec<&Pin> = self
+            .pins
+            .iter()
+            .filter(|pin| matches!(pin.column, PinColumn::Right))
+            .collect();
+
+        let mut html = String::from("<div class=\"gpio-layout\">");
+
+        for row in 0..20 {
+            html.push_str("<div class=\"gpio-row\">");
+
+            //lefty
+            html.push_str(&self.render_pin(left_pins[row])?);
+
+            //righty
+            html.push_str(&self.render_pin(right_pins[row])?);
+
+            html.push_str("</div>");
+        }
+
+        html.push_str("</div>");
+        Ok(html)
+    }
+
+    fn render_pin(&self, pin: &Pin) -> Result<String, GpioError> {
+        let level = match pin.level {
+            PinLevel::High => "high",
+            PinLevel::Low => "low",
+        };
+
+        let powered = match pin.pin_type {
+            PinType::Power5v | PinType::Power3v3 => "power",
+            PinType::Gnd => "ground",
+            _ => "gpio",
+        };
+
+        if powered == "gpio" {
+            let pin_num = pin.number.unwrap();
+            let ret = format!(
+                r#"<button id="{0}" class="pin {1} {2}" ws-send 
+                       hx-trigger="click" hx-vals='{{"pin": "{0}"}}'>{3}</button>"#,
+                pin_num, powered, level, pin.label
+            );
+            Ok(ret)
+        } else {
+            let ret = format!(
+                r#"<button class="pin {0}" disabled>{1}</button>"#,
+                powered, pin.label
+            );
+            Ok(ret)
+        }
+    }
+
+    pub fn update_pin(&self, pin_num: i32) -> String {
+        let pin = &self.pins[pin_num as usize];
+        let level_class = if matches!(pin.level, PinLevel::High) {
+            "high"
+        } else {
+            "low"
+        };
+
+        let type_class = match pin.pin_type {
+            PinType::Power5v | PinType::Power3v3 => "power",
+            PinType::Gnd => "ground",
+            _ => "gpio",
+        };
+
+        // i doubt we'll get this far without having a pin num
+        let pin_update = format!(
+            r#"<button id="{0}" class="pin {1} {2}" ws-send 
+               hx-trigger="click" hx-vals='{{"pin": "{0}"}}'>{3}</button>"#,
+            pin.number.unwrap(),
+            type_class,
+            level_class,
+            pin.label
+        );
+
+        format!(
+            r#"<div id="pin-{}" hx-swap-oob="outerHTML">{}</div>"#,
+            pin.number.unwrap(),
+            pin_update
+        )
     }
 }
 
@@ -445,4 +530,160 @@ impl Drop for Gpio {
             }
         }
     }
+}
+
+// ideally this would never change
+// since we're only supporting pi's
+// so idk why i had it as part of config
+// i guess if a user wants to move it around
+// but idk if that's a good feature
+pub fn default_pins() -> Vec<Pin> {
+    let mut pins = Vec::new();
+
+    let pin = |number: Option<i32>,
+               column: PinColumn,
+               pin_type: PinType,
+               label: &str| Pin {
+        number,
+        column,
+        pin_type,
+        label: label.to_string(),
+        level: PinLevel::Low,
+        direction: PinDirection::Input,
+        pull: PullType::None,
+    };
+
+    pins.push(pin(None, PinColumn::Left, PinType::Power3v3, "3v3 Power"));
+    pins.push(pin(
+        Some(2),
+        PinColumn::Left,
+        PinType::I2c,
+        "GPIO 2 (I2C1 SDA)",
+    ));
+    pins.push(pin(
+        Some(3),
+        PinColumn::Left,
+        PinType::I2c,
+        "GPIO 3 (I2C1 SCL)",
+    ));
+    pins.push(pin(
+        Some(4),
+        PinColumn::Left,
+        PinType::Gpio,
+        "GPIO 4 (GPCLK0)",
+    ));
+    pins.push(pin(None, PinColumn::Left, PinType::Gnd, "Ground"));
+    pins.push(pin(Some(17), PinColumn::Left, PinType::Gpio, "GPIO 17"));
+    pins.push(pin(Some(27), PinColumn::Left, PinType::Gpio, "GPIO 27"));
+    pins.push(pin(Some(22), PinColumn::Left, PinType::Gpio, "GPIO 22"));
+    pins.push(pin(None, PinColumn::Left, PinType::Power3v3, "3v3 Power"));
+    pins.push(pin(
+        Some(10),
+        PinColumn::Left,
+        PinType::Spi,
+        "GPIO 10 (SPI0 MOSI)",
+    ));
+    pins.push(pin(
+        Some(9),
+        PinColumn::Left,
+        PinType::Spi,
+        "GPIO 9 (SPI0 MISO)",
+    ));
+    pins.push(pin(
+        Some(11),
+        PinColumn::Left,
+        PinType::Spi,
+        "GPIO 11 (SPI0 SCLK)",
+    ));
+    pins.push(pin(None, PinColumn::Left, PinType::Gnd, "Ground"));
+    pins.push(pin(
+        Some(0),
+        PinColumn::Left,
+        PinType::I2c,
+        "GPIO 0 (EEPROM SDA)",
+    ));
+    pins.push(pin(Some(5), PinColumn::Left, PinType::Gpio, "GPIO 5"));
+    pins.push(pin(Some(6), PinColumn::Left, PinType::Gpio, "GPIO 6"));
+    pins.push(pin(
+        Some(13),
+        PinColumn::Left,
+        PinType::Gpio,
+        "GPIO 13 (PWM1)",
+    ));
+    pins.push(pin(
+        Some(19),
+        PinColumn::Left,
+        PinType::Pcm,
+        "GPIO 19 (PCM FS)",
+    ));
+    pins.push(pin(Some(26), PinColumn::Left, PinType::Gpio, "GPIO 26"));
+    pins.push(pin(None, PinColumn::Left, PinType::Gnd, "Ground"));
+
+    pins.push(pin(None, PinColumn::Right, PinType::Power5v, "5v Power"));
+    pins.push(pin(None, PinColumn::Right, PinType::Power5v, "5v Power"));
+    pins.push(pin(None, PinColumn::Right, PinType::Gnd, "Ground"));
+    pins.push(pin(
+        Some(14),
+        PinColumn::Right,
+        PinType::Uart,
+        "GPIO 14 (UART TX)",
+    ));
+    pins.push(pin(
+        Some(15),
+        PinColumn::Right,
+        PinType::Uart,
+        "GPIO 15 (UART RX)",
+    ));
+    pins.push(pin(
+        Some(18),
+        PinColumn::Right,
+        PinType::Pcm,
+        "GPIO 18 (PCM CLK)",
+    ));
+    pins.push(pin(None, PinColumn::Right, PinType::Gnd, "Ground"));
+    pins.push(pin(Some(23), PinColumn::Right, PinType::Gpio, "GPIO 23"));
+    pins.push(pin(Some(24), PinColumn::Right, PinType::Gpio, "GPIO 24"));
+    pins.push(pin(None, PinColumn::Right, PinType::Gnd, "Ground"));
+    pins.push(pin(Some(25), PinColumn::Right, PinType::Gpio, "GPIO 25"));
+    pins.push(pin(
+        Some(8),
+        PinColumn::Right,
+        PinType::Spi,
+        "GPIO 8 (SPI0 CE0)",
+    ));
+    pins.push(pin(
+        Some(7),
+        PinColumn::Right,
+        PinType::Spi,
+        "GPIO 7 (SPI0 CE1)",
+    ));
+    pins.push(pin(
+        Some(1),
+        PinColumn::Right,
+        PinType::I2c,
+        "GPIO 1 (EEPROM SCL)",
+    ));
+    pins.push(pin(None, PinColumn::Right, PinType::Gnd, "Ground"));
+    pins.push(pin(
+        Some(12),
+        PinColumn::Right,
+        PinType::Gpio,
+        "GPIO 12 (PWM0)",
+    ));
+    pins.push(pin(None, PinColumn::Right, PinType::Gnd, "Ground"));
+    pins.push(pin(Some(16), PinColumn::Right, PinType::Gpio, "GPIO 16"));
+    pins.push(pin(
+        Some(20),
+        PinColumn::Right,
+        PinType::Pcm,
+        "GPIO 20 (PCM DIN)",
+    ));
+    pins.push(pin(
+        Some(21),
+        PinColumn::Right,
+        PinType::Pcm,
+        "GPIO 21 (PCM DOUT)",
+    ));
+
+    pins
 }
