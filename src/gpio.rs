@@ -452,6 +452,11 @@ impl Gpio {
             PinLevel::Low => "low",
         };
 
+        let checked = match pin.level {
+            PinLevel::High => "checked",
+            PinLevel::Low => "",
+        };
+
         let powered = match pin.pin_type {
             PinType::Power5v | PinType::Power3v3 => "power",
             PinType::Gnd => "ground",
@@ -460,50 +465,31 @@ impl Gpio {
 
         if powered == "gpio" {
             let pin_num = pin.number.unwrap();
+            let unique_id = format!("gpio-pin-{}", pin_num);
+
             let ret = format!(
-                r#"<button id="{0}" class="pin {1} {2}" ws-send 
-                       hx-trigger="click" hx-vals='{{"pin": "{0}"}}'>{3}</button>"#,
-                pin_num, powered, level, pin.label
+                r#"
+            <div id="{0}" class="pin-wrapper">
+            <label class="toggle-switch">
+            <input type="checkbox" {5} id="checkbox-{1}" 
+                class="pin-checkbox" ws-send
+                hx-trigger="change" hx-vals='{{"pin": "{1}"}}'>
+            <span class="pin {2} {3}">{4}</span>
+            </label>
+            </div>
+         "#,
+                unique_id, pin_num, powered, level, pin.label, checked
             );
             Ok(ret)
         } else {
             let ret = format!(
-                r#"<button class="pin {0}" disabled>{1}</button>"#,
+                r#"<div class="pin-wrapper">
+                    <span class="pin {0}" disabled>{1}</span>
+                    </div>"#,
                 powered, pin.label
             );
             Ok(ret)
         }
-    }
-
-    pub fn update_pin(&self, pin_num: i32) -> String {
-        let pin = &self.pins[pin_num as usize];
-        let level_class = if matches!(pin.level, PinLevel::High) {
-            "high"
-        } else {
-            "low"
-        };
-
-        let type_class = match pin.pin_type {
-            PinType::Power5v | PinType::Power3v3 => "power",
-            PinType::Gnd => "ground",
-            _ => "gpio",
-        };
-
-        // i doubt we'll get this far without having a pin num
-        let pin_update = format!(
-            r#"<button id="{0}" class="pin {1} {2}" ws-send 
-               hx-trigger="click" hx-vals='{{"pin": "{0}"}}'>{3}</button>"#,
-            pin.number.unwrap(),
-            type_class,
-            level_class,
-            pin.label
-        );
-
-        format!(
-            r#"<div id="pin-{}" hx-swap-oob="outerHTML">{}</div>"#,
-            pin.number.unwrap(),
-            pin_update
-        )
     }
 }
 

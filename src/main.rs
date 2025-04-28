@@ -37,7 +37,6 @@ struct AppState {
     actions: Arc<Mutex<Vec<Action>>>,
     stop_it: Arc<AtomicBool>,
     log_tx: broadcast::Sender<String>,
-    toggle_tx: broadcast::Sender<String>,
 }
 
 #[tokio::main]
@@ -59,13 +58,11 @@ async fn main() -> Result<(), Box<dyn Error>> {
     };
 
     let (log_tx, _) = broadcast::channel::<String>(100);
-    let (toggle_tx, _) = broadcast::channel::<String>(100);
     let appstate = AppState {
         gpio: Arc::new(Mutex::new(Gpio::new())),
         actions: Arc::new(Mutex::new(config.actions)),
         stop_it: Arc::new(AtomicBool::new(false)),
         log_tx,
-        toggle_tx,
     };
 
     let app = Router::new()
@@ -173,7 +170,6 @@ async fn handle_websocket(
 
 async fn handle_socket(socket: WebSocket, state: AppState) {
     let mut log_rx = state.log_tx.subscribe();
-    let mut toggle_rx = state.toggle_tx.subscribe();
 
     println!("ws connection opened");
 
@@ -181,7 +177,6 @@ async fn handle_socket(socket: WebSocket, state: AppState) {
 
     let mut send_task = tokio::spawn(async move {
         // separating tasks for logging
-        // and toggling should be relatively good enough
         loop {
             tokio::select! {
                 //logging
@@ -192,15 +187,6 @@ async fn handle_socket(socket: WebSocket, state: AppState) {
                             msg
                         );
                         if sender.send(Message::text(fmsg)).await.is_err() {
-                            break;
-                        }
-                    }
-                }
-
-                //toggling
-                result = toggle_rx.recv() => {
-                    if let Ok(msg) = result {
-                        if sender.send(Message::text(msg)).await.is_err() {
                             break;
                         }
                     }
@@ -274,8 +260,6 @@ fn toggle_pin(pin: i32, state: AppState) {
         }
     };
 
-    // todo this needs to be redone as well
-    // as update_pin since we're reacquiring the lock
     match gpio.toggle(pin) {
         Ok(new_level) => {
             let level_str = match new_level {
@@ -287,8 +271,6 @@ fn toggle_pin(pin: i32, state: AppState) {
                 &state,
                 format!("Toggle GPIO {} -> {}", pin, level_str),
             );
-
-            let _ = state.toggle_tx.send(gpio.update_pin(pin));
         }
         Err(e) => {
             let _ = log_error(
