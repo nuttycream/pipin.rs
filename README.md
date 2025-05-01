@@ -1,7 +1,7 @@
 # pipin
 
 ![GitHub Release](https://img.shields.io/github/v/release/nuttycream/pipin?label=Release)
-![File Size](https://img.badgesize.io/https://github.com/nuttycream/pipin/releases/download/v0.1.0/pipinrs-v0.1.0.zip?label=Download%20Size)  
+![File Size](https://img.badgesize.io/https://github.com/nuttycream/pipin/releases/download/v0.1.0/pipinrs-v0.1.0.zip?label=Download%20Size)
 
 <p align="center">
     A simple self contained application to control gpio pins from your browser
@@ -64,8 +64,8 @@ example: http://192.168.68.70:3000
 
 ## To-Do
 
-- [ ] Device address override
-- [ ] Pins should show whether they're high or low
+- [ ] ~~Device address override~~
+- [x] Pins should show whether they're high or low
 - [ ] Individual GPIO pin pulldown/up
 
 ## Attribution
