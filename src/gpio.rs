@@ -318,7 +318,14 @@ impl Gpio {
             self.write_register(reg, reg_value)?;
         }
 
-        self.pins[pin as usize].direction = direction;
+        for p in &mut self.pins {
+            if let Some(num) = p.number {
+                if num == pin {
+                    p.direction = direction;
+                    break;
+                }
+            }
+        }
 
         Ok(())
     }
@@ -348,7 +355,21 @@ impl Gpio {
             }
         }
 
-        self.pins[pin as usize].level = level;
+        // pins aren't mapped 1 to 1 on
+        // physical pins to the vector index
+        // so using something like pins[pin]
+        // fails and sets the wrong
+        // pin idx
+        // todo: better way to handle this
+        for p in &mut self.pins {
+            if let Some(num) = p.number {
+                if num == pin {
+                    p.level = level;
+                    break;
+                }
+            }
+        }
+
         Ok(())
     }
 
@@ -387,7 +408,15 @@ impl Gpio {
             self.write_register(GPIO_PULLCLK0_OFFSET, 0)?;
         }
 
-        self.pins[pin as usize].pull = pull_type;
+        for p in &mut self.pins {
+            if let Some(num) = p.number {
+                if num == pin {
+                    p.pull = pull_type;
+                    break;
+                }
+            }
+        }
+
         Ok(())
     }
 
