@@ -10,7 +10,7 @@
 
 ## Features
 
-- Toggle individual pins (0-27)
+- Toggle individual GPIO Pins (0-27)
 - Wicked fast toggling through WebSockets
 - Queue various actions
   - Toggle
@@ -28,7 +28,7 @@
 - Extract to Raspberry Pi
 
 ```sh
-# Note: if using ssh, you can download on your main machine and rysnc/scp the executable
+# Note: You can download on your main machine and rysnc/scp the executable
 # onto the pi. Example:
 # rsync
 rsync -avz pipin user@hostname:~/pipin
@@ -42,7 +42,7 @@ scp pipin user@pi-host:~/pipin
 
 ```sh
 cd <directory>
-sudo ./pipin # sudo is needed for direct registry access
+./pipin
 ```
 
 - By default it uses port 3000, to use a different port:
@@ -59,16 +59,9 @@ by using the raspberry pi's IP address and port number,
 example: http://192.168.68.70:3000
 ```
 
-- Press 'Initialize' to setup the GPIO pins
+- Press 'Setup' to initialize the GPIO pins
 - bobs ur uncle
-
-## To-Do
-
-- [ ] ~~Device address override~~
-- [x] Pins should show whether they're high or low
-- [ ] Individual GPIO pin pulldown/up
 
 ## Attribution
 
-gpio.h and gpio.c library was modified from
-[gpio direct registry access example](https://elinux.org/RPi_GPIO_Code_Samples#Direct_register_access)
+[GPIO Direct Registry Access in C](https://elinux.org/RPi_GPIO_Code_Samples#Direct_register_access)
