@@ -1,11 +1,13 @@
 # pipin
 
 ![GitHub Release](https://img.shields.io/github/v/release/nuttycream/pipin?label=Release)
-![File Size](https://img.badgesize.io/https://github.com/nuttycream/pipin/releases/download/v0.1.0/pipinrs-v0.1.0.zip?label=Download%20Size)
+[![Release](https://github.com/nuttycream/pipin/actions/workflows/release.yml/badge.svg)](https://github.com/nuttycream/pipin/actions/workflows/release.yml)
+![Download Size](https://img.shields.io/badge/Download%20Size-539%20KB-blue)
+
 
 <p align="center">
     A simple self contained application to control gpio pins from your browser
-    <img src="https://i.imgur.com/tIqAAj5.png">
+    <img src="https://i.imgur.com/aZgyDpJ.png">
 </p>
 
 ## Features
