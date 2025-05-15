@@ -82,6 +82,12 @@ pub async fn start_actions(
     stop.store(false, Ordering::Relaxed);
 
     loop {
+        let gpio = appstate.gpio.lock().unwrap();
+        if !gpio.initialized {
+            log_error(&appstate, "cannot start loop");
+            break;
+        }
+
         let actions = appstate.actions.lock().unwrap().clone();
 
         if actions.is_empty() {
