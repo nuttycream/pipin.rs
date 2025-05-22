@@ -4,7 +4,6 @@
 [![Release](https://github.com/nuttycream/pipin/actions/workflows/release.yml/badge.svg)](https://github.com/nuttycream/pipin/actions/workflows/release.yml)
 ![Download Size](https://img.shields.io/badge/Download%20Size-539%20KB-blue)
 
-
 <p align="center">
     A simple self contained application to control gpio pins from your browser
     <img src="https://i.imgur.com/aZgyDpJ.png">
@@ -63,6 +62,11 @@ example: http://192.168.68.70:3000
 
 - Press 'Setup' to initialize the GPIO pins
 - bobs ur uncle
+
+## Similar
+
+- [pigg](https://github.com/andrewdavidmackenzie/pigg) - GUI for remote control
+  of Raspberry Pi GPIO hardware
 
 ## Attribution
 
